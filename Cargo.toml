@@ -1,4 +1,15 @@
 [package]
 name = "sodium-sys"
-version = "0.1.0"
+version = "0.0.1-pre"
 authors = ["Jason Ozias <jason.g.ozias@gmail.com>"]
+description = "FFI binding to libsodium"
+repository = "https://github.com/rustyhorde/sodium-sys.git"
+keywords = ["libsodium", "NaCl", "crypto", "sodium-sys"]
+links = "sodium"
+build = "build.rs"
+
+[build-dependencies]
+pkg-config = "*"
+
+[dependencies]
+libc = "*"
