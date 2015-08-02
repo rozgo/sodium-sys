@@ -83,6 +83,18 @@ pub fn ss_memcmp(m1: &[u8], m2: &[u8]) -> i32 {
     }
 }
 
+/// The *ss_bin2hex()* function converts a &[u8] into a hexadecimal &str.
+///
+/// The *ss_bin2hex()* function safely wraps the *sodium_bin2hex()* function.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::ss_bin2hex;
+///
+/// let v = [0, 1, 254, 255];
+/// assert!(ss_bin2hex(&v).unwrap() == "0001feff");
+/// ```
 pub fn ss_bin2hex<'a>(mem: &'a [u8]) -> Result<&'a str, ::SSError> {
     let hlen = ( mem.len() * 2 ) + 1;
     let mut bufvec: Vec<i8> = Vec::with_capacity(hlen);
@@ -143,7 +155,12 @@ pub fn ss_mlock(mem: &[u8]) -> i32 {
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::ss_munlock;
+/// use sodium_sys::{ss_mlock, ss_munlock};
+///
+/// let v = [0, 1, 2, 3, 4, 5, 6, 7];
+/// assert!(ss_mlock(&v) == 0);
+/// assert!(ss_munlock(&v) == 0);
+/// assert!(v == [0; 8]);
 /// ```
 pub fn ss_munlock(mem: &[u8]) -> i32 {
     unsafe {
