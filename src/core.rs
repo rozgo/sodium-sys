@@ -1,8 +1,34 @@
 extern "C" {
-    pub fn sodium_init() -> ::libc::c_int;
+    fn sodium_init() -> ::libc::c_int;
+}
+
+/// *ss_init()* initializes the library and should be called before any other function
+/// provided by sodium_sys. The function can be called more than once, but it should not be
+/// executed by multiple threads simultaneously. Add appropriate locks around the function call
+/// if this scenario can happen in your application.
+///
+/// After this function returns, all of the other functions provided by sodium_sys will be
+/// thread-safe.
+///
+/// *sodium_init()* doesn't perform any memory allocations. However, on Unix systems, it opens
+/// */dev/urandom* and keeps the descriptor open so that the device remains accessible after a
+/// *chroot()* call. Multiple calls to *sodium_init()* do not cause additional descriptors to
+/// be opened.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::ss_init;
+///
+/// assert!(ss_init() == 0);
+/// ```
+pub fn ss_init() -> i32 {
+    unsafe {
+        sodium_init()
+    }
 }
 
 #[test]
-fn test_sodium_init() {
-    assert!(unsafe { sodium_init() } == 0);
+fn test_ss_init() {
+    assert!(ss_init() == 0);
 }

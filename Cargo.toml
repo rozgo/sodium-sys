@@ -13,3 +13,6 @@ pkg-config = "*"
 
 [dependencies]
 libc = "*"
+
+[dev-dependencies]
+regex = "*"
