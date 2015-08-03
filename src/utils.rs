@@ -188,7 +188,7 @@ pub fn ss_hex2bin(hex: String, output: &mut Vec<u8>, ignore: Option<String>) -> 
         bufvec.push(0);
     }
     let mut buf = &mut bufvec[..];
-    let mut b: [u64; 1] = [0];
+    let mut b: [::libc::c_ulonglong; 1] = [0];
     let hex_end: [i8; 1] = [0];
 
 
