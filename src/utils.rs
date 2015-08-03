@@ -107,7 +107,7 @@ pub fn ss_memcmp(m1: &[u8], m2: &[u8]) -> i32 {
 /// let v = [0, 1, 254, 255];
 /// assert!(ss_bin2hex(&v).unwrap() == "0001feff");
 /// ```
-pub fn ss_bin2hex<'a>(mem: &'a [u8]) -> Result<&'a str, ::SSError> {
+pub fn ss_bin2hex(mem: &[u8]) -> Result<String, ::SSError> {
     let hlen = ( mem.len() * 2 ) + 1;
     let mut bufvec: Vec<i8> = Vec::with_capacity(hlen);
     for _ in 0..hlen {
@@ -119,7 +119,7 @@ pub fn ss_bin2hex<'a>(mem: &'a [u8]) -> Result<&'a str, ::SSError> {
                                                   buf.len() as ::libc::size_t,
                                                   mem.as_ptr(),
                                                   mem.len() as ::libc::size_t)).to_bytes();
-        Ok(try!(str::from_utf8(slice)))
+        Ok(try!(str::from_utf8(slice)).to_string())
     }
 }
 

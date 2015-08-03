@@ -25,7 +25,8 @@ extern crate libc;
 #[cfg(test)] extern crate regex;
 
 use std::ffi::NulError;
-use std::str::Utf8Error;
+use std::str;
+use std::string;
 
 mod core;
 mod crypto_verify_16;
@@ -40,7 +41,8 @@ pub use self::SSError::*;
 #[derive(Debug)]
 pub enum SSError {
     CSTR(NulError),
-    STR(Utf8Error),
+    STR(str::Utf8Error),
+    STRING(string::FromUtf8Error),
 }
 
 impl From<NulError> for SSError {
@@ -49,8 +51,14 @@ impl From<NulError> for SSError {
     }
 }
 
-impl From<Utf8Error> for SSError {
-    fn from(err: Utf8Error) -> SSError {
+impl From<str::Utf8Error> for SSError {
+    fn from(err: str::Utf8Error) -> SSError {
         STR(err)
+    }
+}
+
+impl From<string::FromUtf8Error> for SSError {
+    fn from(err: string::FromUtf8Error) -> SSError {
+        STRING(err)
     }
 }
