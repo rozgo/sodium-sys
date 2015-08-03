@@ -1,8 +1,9 @@
 use std::ffi::{CStr,CString};
+use std::slice;
 use std::str;
 
-// sodium/utils.h
 extern "C" {
+    // sodium/utils.h
     fn sodium_memzero(pnt: *mut ::libc::c_void, len: ::libc::size_t) -> ();
     fn sodium_memcmp(b1_: *const ::libc::c_void,
                      b2_: *const ::libc::c_void,
@@ -23,10 +24,10 @@ extern "C" {
                        -> ::libc::c_int;
     fn sodium_mlock(addr: *mut ::libc::c_void, len: ::libc::size_t) -> ::libc::c_int;
     fn sodium_munlock(addr: *mut ::libc::c_void, len: ::libc::size_t) -> ::libc::c_int;
-    //pub fn sodium_malloc(size: ::libc::size_t) -> *mut ::libc::c_void;
+    fn sodium_malloc(size: ::libc::size_t) -> *mut ::libc::c_void;
     //pub fn sodium_allocarray(count: ::libc::size_t, size: ::libc::size_t)
     // -> *mut ::libc::c_void;
-    //pub fn sodium_free(ptr: *mut ::libc::c_void) -> ();
+    fn sodium_free(ptr: *mut ::libc::c_void) -> ();
     //pub fn sodium_mprotect_noaccess(ptr: *mut ::libc::c_void) -> ::libc::c_int;
     //pub fn sodium_mprotect_readonly(ptr: *mut ::libc::c_void) -> ::libc::c_int;
     //pub fn sodium_mprotect_readwrite(ptr: *mut ::libc::c_void) -> ::libc::c_int;
@@ -269,6 +270,20 @@ pub fn ss_munlock(mem: &[u8]) -> i32 {
     }
 }
 
+pub fn ss_malloc<'a>(size: ::libc::size_t) -> &'a mut [u8] {
+    unsafe {
+        let ptr = sodium_malloc(size) as *mut u8;
+        assert!(!ptr.is_null());
+        slice::from_raw_parts_mut(ptr, size as usize)
+    }
+}
+
+pub fn ss_free(mem: &mut [u8]) {
+    unsafe {
+        sodium_free(mem.as_mut_ptr() as *mut ::libc::c_void);
+    }
+}
+
 // pub fn ss_increment(n: &mut [u8]) {
 //     unsafe {
 //         sodium_increment(n.as_mut_ptr(), n.len() as ::libc::size_t);
@@ -346,6 +361,16 @@ fn test_ss_mlock_ss_munlock() {
     assert!(ss_mlock(&v) == 0);
     assert!(ss_munlock(&v) == 0);
     assert!(v == [0; 8]);
+}
+
+#[test]
+fn test_ss_malloc_free() {
+    let mut v = ss_malloc(64);
+    v[0] = 1;
+    assert!(v.len() == 64);
+    assert!(v[0] == 1);
+    ss_free(&mut v);
+    drop(v);
 }
 
 // #[test]
