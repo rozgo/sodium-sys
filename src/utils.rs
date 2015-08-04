@@ -185,8 +185,6 @@ pub fn hex2bin(hex: String, output: &mut Vec<u8>, ignore: Option<String>) -> i32
     let mut b: [::libc::size_t; 1] = [0];
     let hex_end: [i8; 1] = [0];
 
-
-
     unsafe {
         let res = sodium_hex2bin(buf.as_mut_ptr(),
                                  buf.len() as ::libc::size_t,
