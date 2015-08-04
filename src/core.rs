@@ -29,8 +29,3 @@ pub fn init() -> i32 {
         sodium_init()
     }
 }
-
-#[test]
-fn test_init() {
-    assert!(init() == 0);
-}

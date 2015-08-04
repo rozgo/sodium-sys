@@ -31,11 +31,6 @@ extern "C" {
     //pub fn sodium_mprotect_readonly(ptr: *mut ::libc::c_void) -> ::libc::c_int;
     //pub fn sodium_mprotect_readwrite(ptr: *mut ::libc::c_void) -> ::libc::c_int;
     //fn sodium_increment(n: *mut ::libc::c_uchar, nlen: ::libc::size_t) -> ();
-
-    // sodium/version.h
-    fn sodium_version_string() -> *const ::libc::c_char;
-    fn sodium_library_version_major() -> ::libc::c_int;
-    fn sodium_library_version_minor() -> ::libc::c_int;
 }
 
 /// After use, sensitive data should be overwritten, but *memset()* and hand-written code can be
@@ -95,19 +90,19 @@ pub fn memcmp(m1: &[u8], m2: &[u8]) -> i32 {
     }
 }
 
-/// The *ss_bin2hex()* function converts a byte sequence into a hexadecimal string.
+/// The *bin2hex()* function converts a byte sequence into a hexadecimal string.
 ///
-/// The *ss_bin2hex()* function safely wraps the *sodium_bin2hex()* function.
+/// The *bin2hex()* function safely wraps the *sodium_bin2hex()* function.
 ///
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::utils::ss_bin2hex;
+/// use sodium_sys::utils::bin2hex;
 ///
 /// let v = [0, 1, 254, 255];
-/// assert!(ss_bin2hex(&v).unwrap() == "0001feff");
+/// assert!(bin2hex(&v).unwrap() == "0001feff");
 /// ```
-pub fn ss_bin2hex(mem: &[u8]) -> Result<String, ::SSError> {
+pub fn bin2hex(mem: &[u8]) -> Result<String, ::SSError> {
     let hlen = ( mem.len() * 2 ) + 1;
     let mut bufvec: Vec<i8> = Vec::with_capacity(hlen);
     for _ in 0..hlen {
@@ -123,7 +118,7 @@ pub fn ss_bin2hex(mem: &[u8]) -> Result<String, ::SSError> {
     }
 }
 
-/// The *ss_hex2bin()* function parses a hexadecimal string *hex* and converts it to a byte
+/// The *hex2bin()* function parses a hexadecimal string *hex* and converts it to a byte
 /// sequence.
 ///
 /// *ignore* is a string of characters to skip. For example, the string ": " allows columns and
@@ -138,37 +133,37 @@ pub fn ss_bin2hex(mem: &[u8]) -> Result<String, ::SSError> {
 ///
 /// It evaluates in constant time for a given length and format.
 ///
-/// *ss_hex2bin()* safely wraps the *sodium_hex2bin()* function.
+/// *hex2bin()* safely wraps the *sodium_hex2bin()* function.
 ///
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::utils::ss_hex2bin;
+/// use sodium_sys::utils::hex2bin;
 ///
 /// let hex = String::from("0001feff");
 /// let mut output = Vec::new();
-/// assert!(ss_hex2bin(hex, &mut output, None) == 0);
+/// assert!(hex2bin(hex, &mut output, None) == 0);
 /// assert!(output == [0, 1, 254, 255]);
 ///
 /// let hex = String::from("00:01:fe:ff");
 /// let ignore = Some(String::from(":"));
 /// let mut output = Vec::new();
-/// assert!(ss_hex2bin(hex, &mut output, ignore) == 0);
+/// assert!(hex2bin(hex, &mut output, ignore) == 0);
 /// assert!(output == [0, 1, 254, 255]);
 ///
 /// let hex = String::from("00 01 fe ff");
 /// let ignore = Some(String::from(" "));
 /// let mut output = Vec::new();
-/// assert!(ss_hex2bin(hex, &mut output, ignore) == 0);
+/// assert!(hex2bin(hex, &mut output, ignore) == 0);
 /// assert!(output == [0, 1, 254, 255]);
 ///
 /// let hex = String::from("00 01:fe ff");
 /// let ignore = Some(String::from(": "));
 /// let mut output = Vec::new();
-/// assert!(ss_hex2bin(hex, &mut output, ignore) == 0);
+/// assert!(hex2bin(hex, &mut output, ignore) == 0);
 /// assert!(output == [0, 1, 254, 255]);
 /// ```
-pub fn ss_hex2bin(hex: String, output: &mut Vec<u8>, ignore: Option<String>) -> i32 {
+pub fn hex2bin(hex: String, output: &mut Vec<u8>, ignore: Option<String>) -> i32 {
     let mut base = hex.clone();
     let igstr = match ignore {
         Some(i) => {
@@ -212,7 +207,7 @@ pub fn ss_hex2bin(hex: String, output: &mut Vec<u8>, ignore: Option<String>) -> 
 
 }
 
-/// The *ss_mlock()* function locks the bytes of *mem*. This can help avoid swapping sensitive
+/// The *mlock()* function locks the bytes of *mem*. This can help avoid swapping sensitive
 /// data to disk.
 ///
 /// In addition, it is recommended to totally disable swap partitions on machines processing
@@ -224,7 +219,7 @@ pub fn ss_hex2bin(hex: String, output: &mut Vec<u8>, ignore: Option<String>) -> 
 /// operating systems where this feature is implemented, kernel crash dumps should also be
 /// disabled.
 ///
-/// *ss_mlock()* safely wraps *sodium_mlock()* which wraps *mlock()* and *VirtualLock()*. Note:
+/// *mlock()* safely wraps *sodium_mlock()* which wraps *mlock()* and *VirtualLock()*. Note:
 /// Many systems place limits on the amount of memory that may be locked by a process. Care should
 /// be taken to raise those limits (e.g. Unix ulimits) where neccessary. *ss_lock()* will return -1
 /// when any limit is reached.
@@ -232,44 +227,44 @@ pub fn ss_hex2bin(hex: String, output: &mut Vec<u8>, ignore: Option<String>) -> 
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::utils::ss_mlock;
+/// use sodium_sys::utils::mlock;
 ///
 /// let v = [0, 1, 2, 3, 4, 5, 6, 7];
-/// assert!(ss_mlock(&v) == 0);
+/// assert!(mlock(&v) == 0);
 /// ```
-pub fn ss_mlock(mem: &[u8]) -> i32 {
+pub fn mlock(mem: &[u8]) -> i32 {
     unsafe {
         sodium_mlock(mem.as_ptr() as *mut ::libc::c_void, mem.len() as ::libc::size_t)
     }
 }
 
-/// The *ss_munlock()* function should be called after locked memory is not being used any more.
+/// The *munlock()* function should be called after locked memory is not being used any more.
 /// It will zero the bytes in *mem* before actually flagging the pages as swappable again. Calling
-/// *memzero()* prior to *ss_munlock()* is thus not required.
+/// *memzero()* prior to *munlock()* is thus not required.
 ///
 /// On systems where it is supported, *sodium_mlock()* also wraps *madvise()* and advises the
 /// kernel not to include the locked memory in coredumps. *ss_unlock()* also undoes this additional
 /// protection.
 ///
-/// *ss_munlock* safely wraps *sodium_munlock*.
+/// *munlock* safely wraps *sodium_munlock*.
 ///
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::utils::{ss_mlock, ss_munlock};
+/// use sodium_sys::utils::{mlock, munlock};
 ///
 /// let v = [0, 1, 2, 3, 4, 5, 6, 7];
-/// assert!(ss_mlock(&v) == 0);
-/// assert!(ss_munlock(&v) == 0);
+/// assert!(mlock(&v) == 0);
+/// assert!(munlock(&v) == 0);
 /// assert!(v == [0; 8]);
 /// ```
-pub fn ss_munlock(mem: &[u8]) -> i32 {
+pub fn munlock(mem: &[u8]) -> i32 {
     unsafe {
         sodium_munlock(mem.as_ptr() as *mut ::libc::c_void, mem.len() as ::libc::size_t)
     }
 }
 
-/// The *ss_malloc()* function returns an array from which exactly size contiguous bytes of memory
+/// The *malloc()* function returns an array from which exactly size contiguous bytes of memory
 /// can be accessed.
 ///
 /// The allocated region is placed at the end of a page boundary, immediately followed by a guard
@@ -277,7 +272,7 @@ pub fn ss_munlock(mem: &[u8]) -> i32 {
 /// application.
 ///
 /// A canary is also placed right before the returned pointer. Modification of this canary are
-/// detected when trying to free the allocated region with *ss_free()*, and also cause the
+/// detected when trying to free the allocated region with *free()*, and also cause the
 /// application to immediately terminate.
 ///
 /// An additional guard page is placed before this canary to make it less likely for sensitive data
@@ -293,13 +288,13 @@ pub fn ss_munlock(mem: &[u8]) -> i32 {
 /// The returned address will not be aligned if the allocation size is not a multiple of the
 /// required alignment.
 ///
-/// For this reason, *ss_malloc()* should not be used with packed or variable-length structures,
-/// unless the size given to *ss_malloc()* is rounded up in order to ensure proper alignment.
+/// For this reason, *malloc()* should not be used with packed or variable-length structures,
+/// unless the size given to *malloc()* is rounded up in order to ensure proper alignment.
 ///
 /// All the structures used by libsodium can safely be allocated using *sodium_malloc()*, the only
 /// one requiring extra care being crypto_generichash_state, whose size needs to be rounded up to a
 /// multiple of 64 bytes.
-pub fn ss_malloc<'a>(size: ::libc::size_t) -> &'a mut [u8] {
+pub fn malloc<'a>(size: ::libc::size_t) -> &'a mut [u8] {
     unsafe {
         let ptr = sodium_malloc(size) as *mut u8;
         assert!(!ptr.is_null());
@@ -307,26 +302,28 @@ pub fn ss_malloc<'a>(size: ::libc::size_t) -> &'a mut [u8] {
     }
 }
 
-/// The *ss_allocarray()* function returns an array from which count objects that are size bytes of
+/// The *allocarray()* function returns an array from which count objects that are size bytes of
 /// memory each can be accessed.
 ///
-/// It provides the same guarantees as *ss_malloc()* but also protects against arithmetic overflows
+/// It provides the same guarantees as *malloc()* but also protects against arithmetic overflows
 /// when count * size exceeds SIZE_MAX.
 ///
-/// *ss_allocarray()* safely wraps *sodium_allocarray()*.
+/// *allocarray()* safely wraps *sodium_allocarray()*.
 ///
 /// # Examples
 ///
-/// ```ignore
-/// use sodium_sys::utils::{ss_allocarray,ss_free};
+/// ```
+/// use sodium_sys::core::init;
+/// use sodium_sys::utils::{allocarray,free};
 ///
-/// let mut v = ss_allocarray(2, 16);
+/// let _ = init();
+/// let mut v = allocarray(2, 16);
 /// v[0] = 1;
 /// assert!(v.len() == 32);
 /// assert!(v[0] == 1);
-/// ss_free(&v);
+/// free(v);
 /// ```
-pub fn ss_allocarray<'a>(count: ::libc::size_t, size: ::libc::size_t) -> &'a mut [u8] {
+pub fn allocarray<'a>(count: ::libc::size_t, size: ::libc::size_t) -> &'a mut [u8] {
     unsafe {
         let ptr = sodium_allocarray(count, size) as *mut u8;
         assert!(!ptr.is_null());
@@ -334,134 +331,14 @@ pub fn ss_allocarray<'a>(count: ::libc::size_t, size: ::libc::size_t) -> &'a mut
     }
 }
 
-pub fn ss_free(mem: &mut [u8]) {
+pub fn free(mem: &mut [u8]) {
     unsafe {
         sodium_free(mem.as_mut_ptr() as *mut ::libc::c_void);
     }
 }
 
-// pub fn ss_increment(n: &mut [u8]) {
+// pub fn increment(n: &mut [u8]) {
 //     unsafe {
 //         sodium_increment(n.as_mut_ptr(), n.len() as ::libc::size_t);
 //     }
 // }
-
-pub fn ss_version_string<'a>() -> Result<&'a str, ::SSError> {
-    unsafe {
-        let slice = CStr::from_ptr(sodium_version_string()).to_bytes();
-        Ok(try!(str::from_utf8(slice)))
-    }
-}
-
-pub fn ss_library_version_major() -> i32 {
-    unsafe {
-        sodium_library_version_major()
-    }
-}
-
-pub fn ss_library_version_minor() -> i32 {
-    unsafe {
-        sodium_library_version_minor()
-    }
-}
-
-#[test]
-fn test_memzero() {
-    let v = [0, 1, 2, 3, 4, 5, 6, 7];
-    memzero(&v);
-    assert!(v == [0; 8]);
-}
-
-#[test]
-fn test_memcmp() {
-    let v0 = [0, 1, 2, 3, 4, 5, 6, 7];
-    let v1 = [0, 1, 2, 3, 4, 5, 6, 7];
-    let v2 = [7, 6, 5, 4, 3, 2, 1, 0];
-    assert!(memcmp(&v0,&v1) == 0);
-    assert!(memcmp(&v0,&v2) == -1);
-    assert!(memcmp(&v1,&v2) == -1);
-}
-
-#[test]
-fn test_ss_bin2hex() {
-    let v = [0, 1, 254, 255];
-    assert!(ss_bin2hex(&v).unwrap() == "0001feff");
-}
-
-#[test]
-fn test_ss_hex2bin() {
-    let hex = String::from("0001feff");
-    let mut output = Vec::new();
-    assert!(ss_hex2bin(hex, &mut output, None) == 0);
-    assert!(output == [0, 1, 254, 255]);
-    let hex = String::from("00:01:fe:ff");
-    let ignore = Some(String::from(":"));
-    let mut output = Vec::new();
-    assert!(ss_hex2bin(hex, &mut output, ignore) == 0);
-    assert!(output == [0, 1, 254, 255]);
-    let hex = String::from("00 01 fe ff");
-    let ignore = Some(String::from(" "));
-    let mut output = Vec::new();
-    assert!(ss_hex2bin(hex, &mut output, ignore) == 0);
-    assert!(output == [0, 1, 254, 255]);
-    let hex = String::from("00 01:fe ff");
-    let ignore = Some(String::from(": "));
-    let mut output = Vec::new();
-    assert!(ss_hex2bin(hex, &mut output, ignore) == 0);
-    assert!(output == [0, 1, 254, 255]);
-}
-
-#[test]
-fn test_ss_mlock_ss_munlock() {
-    let v = [0, 1, 2, 3, 4, 5, 6, 7];
-    assert!(ss_mlock(&v) == 0);
-    assert!(ss_munlock(&v) == 0);
-    assert!(v == [0; 8]);
-}
-
-#[test]
-fn test_ss_malloc_free() {
-    let mut v = ss_malloc(64);
-    v[0] = 1;
-    assert!(v.len() == 64);
-    assert!(v[0] == 1);
-    ss_free(&mut v);
-}
-
-#[test]
-fn test_ss_allocarray_free() {
-    let mut v = ss_allocarray(2, 16);
-    v[0] = 1;
-    assert!(v.len() == 32);
-    assert!(v[0] == 1);
-    ss_free(&mut v);
-}
-
-// #[test]
-// fn test_ss_increment() {
-//     let mut nonce = [1];
-//     ss_increment(&mut nonce);
-//     assert!(nonce == [2]);
-// }
-
-#[test]
-fn test_ss_version_string() {
-    use regex::Regex;
-
-    let re = Regex::new(r"^\d{1}\.\d{1}\.\d{1}$").unwrap();
-    assert!(re.is_match(ss_version_string().unwrap()));
-}
-
-#[test]
-fn test_ss_library_version_major() {
-    use regex::Regex;
-    let re = Regex::new(r"^\d{1}$").unwrap();
-    assert!(re.is_match(&ss_library_version_major().to_string()[..]));
-}
-
-#[test]
-fn test_ss_library_version_minor() {
-    use regex::Regex;
-    let re = Regex::new(r"^\d{1}$").unwrap();
-    assert!(re.is_match(&ss_library_version_minor().to_string()[..]));
-}

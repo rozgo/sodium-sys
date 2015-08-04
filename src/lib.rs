@@ -30,6 +30,7 @@ use std::string;
 
 pub mod core;
 pub mod utils;
+pub mod version;
 
 pub mod crypto {
     pub mod crypto_verify;
