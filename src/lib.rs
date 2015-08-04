@@ -20,7 +20,7 @@
 //!
 //! [sodium-sys](https://github.com/rustyhorde/sodium-sys) is rust bindings for
 //! [Sodium](https://github.com/jedisct1/libsodium).
-#![allow(non_camel_case_types)]
+#![allow(non_upper_case_globals)]
 extern crate libc;
 #[cfg(test)] extern crate regex;
 
@@ -28,13 +28,13 @@ use std::ffi::NulError;
 use std::str;
 use std::string;
 
-mod core;
-mod crypto_verify_16;
-mod utils;
+pub mod core;
+pub mod utils;
+pub mod version;
 
-pub use core::*;
-pub use crypto_verify_16::*;
-pub use utils::*;
+pub mod crypto {
+    pub mod crypto_verify;
+}
 
 pub use self::SSError::*;
 
