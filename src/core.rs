@@ -2,7 +2,7 @@ extern "C" {
     fn sodium_init() -> ::libc::c_int;
 }
 
-/// *ss_init()* initializes the library and should be called before any other function
+/// *init()* initializes the library and should be called before any other function
 /// provided by sodium_sys. The function can be called more than once, but it should not be
 /// executed by multiple threads simultaneously. Add appropriate locks around the function call
 /// if this scenario can happen in your application.
@@ -15,20 +15,22 @@ extern "C" {
 /// *chroot()* call. Multiple calls to *sodium_init()* do not cause additional descriptors to
 /// be opened.
 ///
+/// *init()* safely wraps *sodium_init()*.
+///
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::ss_init;
+/// use sodium_sys::core;
 ///
-/// assert!(ss_init() == 0);
+/// assert!(core::init() == 0);
 /// ```
-pub fn ss_init() -> i32 {
+pub fn init() -> i32 {
     unsafe {
         sodium_init()
     }
 }
 
 #[test]
-fn test_ss_init() {
-    assert!(ss_init() == 0);
+fn test_init() {
+    assert!(init() == 0);
 }

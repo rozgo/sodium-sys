@@ -25,8 +25,7 @@ extern "C" {
     fn sodium_mlock(addr: *mut ::libc::c_void, len: ::libc::size_t) -> ::libc::c_int;
     fn sodium_munlock(addr: *mut ::libc::c_void, len: ::libc::size_t) -> ::libc::c_int;
     fn sodium_malloc(size: ::libc::size_t) -> *mut ::libc::c_void;
-    //pub fn sodium_allocarray(count: ::libc::size_t, size: ::libc::size_t)
-    // -> *mut ::libc::c_void;
+    fn sodium_allocarray(count: ::libc::size_t, size: ::libc::size_t) -> *mut ::libc::c_void;
     fn sodium_free(ptr: *mut ::libc::c_void) -> ();
     //pub fn sodium_mprotect_noaccess(ptr: *mut ::libc::c_void) -> ::libc::c_int;
     //pub fn sodium_mprotect_readonly(ptr: *mut ::libc::c_void) -> ::libc::c_int;
@@ -42,20 +41,20 @@ extern "C" {
 /// After use, sensitive data should be overwritten, but *memset()* and hand-written code can be
 /// silently stripped out by an optimizing compiler or by the linker.
 ///
-/// The *ss_memzero()* function tries to effectively zero the bytes in *mem*, even if
+/// The *memzero()* function tries to effectively zero the bytes in *mem*, even if
 /// optimizations are being applied to the code.  This function safely wraps a call to
 /// *sodium_memzero()*.
 ///
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::ss_memzero;
+/// use sodium_sys::utils::memzero;
 ///
 /// let v = [0, 1, 2, 3, 4, 5, 6, 7];
-/// ss_memzero(&v);
+/// memzero(&v);
 /// assert!(v == [0; 8]);
 /// ```
-pub fn ss_memzero(mem: &[u8]) {
+pub fn memzero(mem: &[u8]) {
     unsafe {
         sodium_memzero(mem.as_ptr() as *mut ::libc::c_void, mem.len() as ::libc::size_t);
     }
@@ -64,27 +63,27 @@ pub fn ss_memzero(mem: &[u8]) {
 /// When a comparison involves secret data (e.g. key, authentication tag), is it critical to
 /// use a constant-time comparison function in order to mitigate side-channel attacks.
 ///
-/// The *ss_memcmp()* function can be used for this purpose.
+/// The *memcmp()* function can be used for this purpose.
 ///
 /// The function returns 0 if the bytes pointed to by *m1* match the bytes pointed to
 /// by *m2*. Otherwise, it returns -1.
 ///
-/// Note: *ss_memcmp* safely wraps *sodium_memcmp*.  *sodium_memcmp()* is not a lexicographic
+/// Note: *memcmp* safely wraps *sodium_memcmp*.  *sodium_memcmp()* is not a lexicographic
 /// comparator and is not a generic replacement for *memcmp()*.
 ///
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::ss_memcmp;
+/// use sodium_sys::utils::memcmp;
 ///
 /// let v0 = [0, 1, 2, 3, 4, 5, 6, 7];
 /// let v1 = [0, 1, 2, 3, 4, 5, 6, 7];
 /// let v2 = [7, 6, 5, 4, 3, 2, 1, 0];
-/// assert!(ss_memcmp(&v0,&v1) == 0);
-/// assert!(ss_memcmp(&v0,&v2) == -1);
-/// assert!(ss_memcmp(&v1,&v2) == -1);
+/// assert!(memcmp(&v0,&v1) == 0);
+/// assert!(memcmp(&v0,&v2) == -1);
+/// assert!(memcmp(&v1,&v2) == -1);
 /// ```
-pub fn ss_memcmp(m1: &[u8], m2: &[u8]) -> i32 {
+pub fn memcmp(m1: &[u8], m2: &[u8]) -> i32 {
     if m1.len() == m2.len() {
         unsafe {
             sodium_memcmp(m1.as_ptr() as *const ::libc::c_void,
@@ -103,7 +102,7 @@ pub fn ss_memcmp(m1: &[u8], m2: &[u8]) -> i32 {
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::ss_bin2hex;
+/// use sodium_sys::utils::ss_bin2hex;
 ///
 /// let v = [0, 1, 254, 255];
 /// assert!(ss_bin2hex(&v).unwrap() == "0001feff");
@@ -144,7 +143,7 @@ pub fn ss_bin2hex(mem: &[u8]) -> Result<String, ::SSError> {
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::ss_hex2bin;
+/// use sodium_sys::utils::ss_hex2bin;
 ///
 /// let hex = String::from("0001feff");
 /// let mut output = Vec::new();
@@ -233,7 +232,7 @@ pub fn ss_hex2bin(hex: String, output: &mut Vec<u8>, ignore: Option<String>) -> 
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::ss_mlock;
+/// use sodium_sys::utils::ss_mlock;
 ///
 /// let v = [0, 1, 2, 3, 4, 5, 6, 7];
 /// assert!(ss_mlock(&v) == 0);
@@ -246,7 +245,7 @@ pub fn ss_mlock(mem: &[u8]) -> i32 {
 
 /// The *ss_munlock()* function should be called after locked memory is not being used any more.
 /// It will zero the bytes in *mem* before actually flagging the pages as swappable again. Calling
-/// *ss_memzero()* prior to *ss_munlock()* is thus not required.
+/// *memzero()* prior to *ss_munlock()* is thus not required.
 ///
 /// On systems where it is supported, *sodium_mlock()* also wraps *madvise()* and advises the
 /// kernel not to include the locked memory in coredumps. *ss_unlock()* also undoes this additional
@@ -257,7 +256,7 @@ pub fn ss_mlock(mem: &[u8]) -> i32 {
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::{ss_mlock, ss_munlock};
+/// use sodium_sys::utils::{ss_mlock, ss_munlock};
 ///
 /// let v = [0, 1, 2, 3, 4, 5, 6, 7];
 /// assert!(ss_mlock(&v) == 0);
@@ -270,11 +269,68 @@ pub fn ss_munlock(mem: &[u8]) -> i32 {
     }
 }
 
+/// The *ss_malloc()* function returns an array from which exactly size contiguous bytes of memory
+/// can be accessed.
+///
+/// The allocated region is placed at the end of a page boundary, immediately followed by a guard
+/// page. As a result, accessing memory past the end of the region will immediately terminate the
+/// application.
+///
+/// A canary is also placed right before the returned pointer. Modification of this canary are
+/// detected when trying to free the allocated region with *ss_free()*, and also cause the
+/// application to immediately terminate.
+///
+/// An additional guard page is placed before this canary to make it less likely for sensitive data
+/// to be accessible when reading past the end of an unrelated region.
+///
+/// The allocated region is filled with 0xd0 bytes in order to help catch bugs due to initialized
+/// data.
+///
+/// In addition, *sodium_mlock()* is called on the region to help avoid it being swapped to disk.
+/// On operating systems supporting MAP_NOCORE or MADV_DONTDUMP, memory allocated this way will
+/// also not be part of core dumps.
+///
+/// The returned address will not be aligned if the allocation size is not a multiple of the
+/// required alignment.
+///
+/// For this reason, *ss_malloc()* should not be used with packed or variable-length structures,
+/// unless the size given to *ss_malloc()* is rounded up in order to ensure proper alignment.
+///
+/// All the structures used by libsodium can safely be allocated using *sodium_malloc()*, the only
+/// one requiring extra care being crypto_generichash_state, whose size needs to be rounded up to a
+/// multiple of 64 bytes.
 pub fn ss_malloc<'a>(size: ::libc::size_t) -> &'a mut [u8] {
     unsafe {
         let ptr = sodium_malloc(size) as *mut u8;
         assert!(!ptr.is_null());
         slice::from_raw_parts_mut(ptr, size as usize)
+    }
+}
+
+/// The *ss_allocarray()* function returns an array from which count objects that are size bytes of
+/// memory each can be accessed.
+///
+/// It provides the same guarantees as *ss_malloc()* but also protects against arithmetic overflows
+/// when count * size exceeds SIZE_MAX.
+///
+/// *ss_allocarray()* safely wraps *sodium_allocarray()*.
+///
+/// # Examples
+///
+/// ```ignore
+/// use sodium_sys::utils::{ss_allocarray,ss_free};
+///
+/// let mut v = ss_allocarray(2, 16);
+/// v[0] = 1;
+/// assert!(v.len() == 32);
+/// assert!(v[0] == 1);
+/// ss_free(&v);
+/// ```
+pub fn ss_allocarray<'a>(count: ::libc::size_t, size: ::libc::size_t) -> &'a mut [u8] {
+    unsafe {
+        let ptr = sodium_allocarray(count, size) as *mut u8;
+        assert!(!ptr.is_null());
+        slice::from_raw_parts_mut(ptr, (count * size) as usize)
     }
 }
 
@@ -310,20 +366,20 @@ pub fn ss_library_version_minor() -> i32 {
 }
 
 #[test]
-fn test_ss_memzero() {
+fn test_memzero() {
     let v = [0, 1, 2, 3, 4, 5, 6, 7];
-    ss_memzero(&v);
+    memzero(&v);
     assert!(v == [0; 8]);
 }
 
 #[test]
-fn test_ss_memcmp() {
+fn test_memcmp() {
     let v0 = [0, 1, 2, 3, 4, 5, 6, 7];
     let v1 = [0, 1, 2, 3, 4, 5, 6, 7];
     let v2 = [7, 6, 5, 4, 3, 2, 1, 0];
-    assert!(ss_memcmp(&v0,&v1) == 0);
-    assert!(ss_memcmp(&v0,&v2) == -1);
-    assert!(ss_memcmp(&v1,&v2) == -1);
+    assert!(memcmp(&v0,&v1) == 0);
+    assert!(memcmp(&v0,&v2) == -1);
+    assert!(memcmp(&v1,&v2) == -1);
 }
 
 #[test]
@@ -370,7 +426,15 @@ fn test_ss_malloc_free() {
     assert!(v.len() == 64);
     assert!(v[0] == 1);
     ss_free(&mut v);
-    drop(v);
+}
+
+#[test]
+fn test_ss_allocarray_free() {
+    let mut v = ss_allocarray(2, 16);
+    v[0] = 1;
+    assert!(v.len() == 32);
+    assert!(v[0] == 1);
+    ss_free(&mut v);
 }
 
 // #[test]

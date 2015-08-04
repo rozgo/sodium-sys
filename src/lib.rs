@@ -28,13 +28,12 @@ use std::ffi::NulError;
 use std::str;
 use std::string;
 
-mod core;
-mod crypto_verify;
-mod utils;
+pub mod core;
+pub mod utils;
 
-pub use core::*;
-pub use crypto_verify::*;
-pub use utils::*;
+pub mod crypto {
+    pub mod crypto_verify;
+}
 
 pub use self::SSError::*;
 
