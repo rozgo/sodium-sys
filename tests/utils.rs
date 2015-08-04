@@ -71,10 +71,14 @@ fn malloc_free() {
 fn allocarray_free() {
     use core::init;
     let _ = init();
-    let mut v = utils::allocarray(2, 16);
+    let count = 2;
+    let size = 16;
+    let mut v = utils::allocarray(count, size);
     v[0] = 1;
-    assert!(v.len() == 32);
+    v[31] = 255;
+    assert!(v.len() == (count * size) as usize);
     assert!(v[0] == 1);
+    assert!(v[31] == 255);
     utils::free(&mut v);
 }
 

@@ -118,8 +118,7 @@ pub fn bin2hex(mem: &[u8]) -> Result<String, ::SSError> {
     }
 }
 
-/// The *hex2bin()* function parses a hexadecimal string *hex* and converts it to a byte
-/// sequence.
+/// The *hex2bin()* function parses a hexadecimal string and converts it to a byte sequence.
 ///
 /// *ignore* is a string of characters to skip. For example, the string ": " allows columns and
 /// spaces to be present at any locations in the hexadecimal string. These characters will just be
@@ -207,8 +206,8 @@ pub fn hex2bin(hex: String, output: &mut Vec<u8>, ignore: Option<String>) -> i32
 
 }
 
-/// The *mlock()* function locks the bytes of *mem*. This can help avoid swapping sensitive
-/// data to disk.
+/// The *mlock()* function locks the bytes of the given array. This can help avoid swapping
+/// sensitive data to disk.
 ///
 /// In addition, it is recommended to totally disable swap partitions on machines processing
 /// senstive data, or, as a second choice, use encrypted swap partitions.
@@ -221,7 +220,7 @@ pub fn hex2bin(hex: String, output: &mut Vec<u8>, ignore: Option<String>) -> i32
 ///
 /// *mlock()* safely wraps *sodium_mlock()* which wraps *mlock()* and *VirtualLock()*. Note:
 /// Many systems place limits on the amount of memory that may be locked by a process. Care should
-/// be taken to raise those limits (e.g. Unix ulimits) where neccessary. *ss_lock()* will return -1
+/// be taken to raise those limits (e.g. Unix ulimits) where neccessary. *mlock()* will return -1
 /// when any limit is reached.
 ///
 /// # Examples
@@ -239,8 +238,8 @@ pub fn mlock(mem: &[u8]) -> i32 {
 }
 
 /// The *munlock()* function should be called after locked memory is not being used any more.
-/// It will zero the bytes in *mem* before actually flagging the pages as swappable again. Calling
-/// *memzero()* prior to *munlock()* is thus not required.
+/// It will zero the bytes in the array before actually flagging the pages as swappable again.
+/// Calling *memzero()* prior to *munlock()* is thus not required.
 ///
 /// On systems where it is supported, *sodium_mlock()* also wraps *madvise()* and advises the
 /// kernel not to include the locked memory in coredumps. *ss_unlock()* also undoes this additional
@@ -264,8 +263,7 @@ pub fn munlock(mem: &[u8]) -> i32 {
     }
 }
 
-/// The *malloc()* function returns an array from which exactly size contiguous bytes of memory
-/// can be accessed.
+/// The *malloc()* function returns a mutable array of bytes.
 ///
 /// The allocated region is placed at the end of a page boundary, immediately followed by a guard
 /// page. As a result, accessing memory past the end of the region will immediately terminate the
@@ -294,6 +292,20 @@ pub fn munlock(mem: &[u8]) -> i32 {
 /// All the structures used by libsodium can safely be allocated using *sodium_malloc()*, the only
 /// one requiring extra care being crypto_generichash_state, whose size needs to be rounded up to a
 /// multiple of 64 bytes.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core::init;
+/// use sodium_sys::utils::{malloc,free};
+///
+/// let _ = init();
+/// let mut v = malloc(64);
+/// v[0] = 1;
+/// assert!(v.len() == 64);
+/// assert!(v[0] == 1);
+/// free(v);
+/// ```
 pub fn malloc<'a>(size: ::libc::size_t) -> &'a mut [u8] {
     unsafe {
         let ptr = sodium_malloc(size) as *mut u8;
@@ -302,8 +314,7 @@ pub fn malloc<'a>(size: ::libc::size_t) -> &'a mut [u8] {
     }
 }
 
-/// The *allocarray()* function returns an array from which count objects that are size bytes of
-/// memory each can be accessed.
+/// The *allocarray()* function returns a mutable byte array.
 ///
 /// It provides the same guarantees as *malloc()* but also protects against arithmetic overflows
 /// when count * size exceeds SIZE_MAX.
@@ -331,6 +342,34 @@ pub fn allocarray<'a>(count: ::libc::size_t, size: ::libc::size_t) -> &'a mut [u
     }
 }
 
+/// The *free()* function unlocks and deallocates memory allocated using *malloc()* or
+/// *allocarray()*.
+///
+/// Prior to this, the canary is checked in order to detect possible buffer underflows and
+/// terminate the process if required.
+///
+/// *free()* also fills the memory region with zeros before the deallocation.
+///
+/// This function can be called even if the region was previously protected using
+/// *mprotect_readonly()*; the protection will automatically be changed as needed.
+///
+/// The *free()* function safely wraps the *sodium_free* function.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core::init;
+/// use sodium_sys::utils::{malloc,free};
+///
+/// let _ = init();
+/// let mut v = malloc(128);
+/// v[0] = 1;
+/// v[127] = 255;
+/// assert!(v.len() == 128);
+/// assert!(v[0] == 1);
+/// assert!(v[127] == 255);
+/// free(v);
+/// ```
 pub fn free(mem: &mut [u8]) {
     unsafe {
         sodium_free(mem.as_mut_ptr() as *mut ::libc::c_void);
