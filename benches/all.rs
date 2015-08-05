@@ -2,6 +2,7 @@
 extern crate sodium_sys;
 extern crate test;
 
+mod randombytes;
 mod utils;
 
 mod crypto {

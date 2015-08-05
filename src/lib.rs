@@ -29,6 +29,7 @@ use std::str;
 use std::string;
 
 pub mod core;
+pub mod randombytes;
 pub mod utils;
 pub mod version;
 
