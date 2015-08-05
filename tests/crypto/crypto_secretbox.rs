@@ -33,7 +33,7 @@ fn gen_nonce() {
 fn seal() {
     use sodium_sys::core::init;
     init();
-    let ciphertext = secretbox::seal(TEST_MESSAGE, TEST_KEY, TEST_NONCE);
+    let ciphertext = secretbox::seal(TEST_MESSAGE, &TEST_KEY, &TEST_NONCE);
     assert!(ciphertext == TEST_CIPHERTEXT);
 }
 

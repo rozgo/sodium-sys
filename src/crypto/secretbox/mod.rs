@@ -20,15 +20,15 @@ extern "C" {
                                   k: *const ::libc::c_uchar) -> ::libc::c_int;
 }
 
-pub fn gen_key<'a>() -> &'a [u8] {
-    let mut key = utils::malloc(KEYBYTES as ::libc::size_t);
+pub fn gen_key<'a>() -> &'a mut [u8] {
+    let mut key = utils::malloc(KEYBYTES);
     randombytes::random_byte_array(&mut key);
     utils::mprotect_readonly(key);
     key
 }
 
 pub fn gen_nonce<'a>() -> &'a [u8] {
-    let mut nonce = utils::malloc(NONCEBYTES as ::libc::size_t);
+    let nonce = utils::malloc(NONCEBYTES);
     randombytes::random_byte_array(&mut nonce);
     utils::mprotect_readonly(nonce);
     nonce
@@ -44,23 +44,26 @@ pub fn gen_nonce<'a>() -> &'a [u8] {
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::core;
+/// use sodium_sys::{core,randombytes,utils};
 /// use sodium_sys::crypto::secretbox;
 ///
-/// // Don't do this in the wild.  Encrypting with all 0's is a bad idea.  Use gen_key().
-/// const TEST_KEY: [u8; secretbox::KEYBYTES] = [0; secretbox::KEYBYTES];
-/// const TEST_NONCE: [u8; secretbox::NONCEBYTES] = [0; secretbox::NONCEBYTES];
-/// const TEST_MESSAGE: &'static [u8] = b"test";
-/// const TEST_CIPHERTEXT: [u8; 20] = [175, 153, 180, 147, 246, 123, 253, 41,
-///                                    159, 169, 32, 114, 64, 251, 167, 179,
-///                                    178, 91, 200, 139];
-///
 /// core::init();
-/// let ciphertext = secretbox::seal(TEST_MESSAGE, TEST_KEY, TEST_NONCE);
-/// assert!(ciphertext == TEST_CIPHERTEXT);
+/// let mut key = utils::malloc(secretbox::KEYBYTES);
+/// let mut nonce = utils::malloc(secretbox::NONCEBYTES);
+/// randombytes::random_byte_array(&mut key);
+/// randombytes::random_byte_array(&mut nonce);
+/// utils::mprotect_readonly(&mut key);
+/// utils::mprotect_readonly(&mut nonce);
+/// let ciphertext = secretbox::seal(b"test", key, nonce);
+/// utils::mprotect_readonly(ciphertext);
+/// println!("{:?}", ciphertext);
+/// utils::free(&key);
+/// utils::free(&nonce);
 /// ```
-pub fn seal<'a>(message: &[u8], key: [u8; KEYBYTES], nonce: [u8; NONCEBYTES]) -> &'a mut [u8] {
-    let mut ciphertext = utils::malloc((MACBYTES + message.len()) as ::libc::size_t);
+pub fn seal<'a>(message: &[u8], key: &[u8], nonce: &[u8]) -> &'a mut [u8] {
+    assert!(key.len() == KEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+    let mut ciphertext = utils::malloc(MACBYTES + message.len());
 
     unsafe {
         crypto_secretbox_easy(ciphertext.as_mut_ptr(),
@@ -76,7 +79,7 @@ pub fn seal<'a>(message: &[u8], key: [u8; KEYBYTES], nonce: [u8; NONCEBYTES]) ->
 }
 
 pub fn open<'a>(ciphertext: &[u8], key: [u8; KEYBYTES], nonce: [u8; NONCEBYTES]) -> &'a mut [u8] {
-    let mut message = utils::malloc((ciphertext.len() - MACBYTES) as ::libc::size_t);
+    let mut message = utils::malloc(ciphertext.len() - MACBYTES);
 
     unsafe {
         crypto_secretbox_open_easy(message.as_mut_ptr(),

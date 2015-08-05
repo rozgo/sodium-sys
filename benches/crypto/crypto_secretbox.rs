@@ -34,7 +34,7 @@ fn bench_seal(b: &mut Bencher) {
     use sodium_sys::core::init;
     init();
     b.iter(|| {
-        let mut ciphertext = secretbox::seal(TEST_MESSAGE, TEST_KEY, TEST_NONCE);
+        let mut ciphertext = secretbox::seal(TEST_MESSAGE, &TEST_KEY, &TEST_NONCE);
         utils::free(&mut ciphertext);
     });
 }
