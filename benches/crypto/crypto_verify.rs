@@ -1,4 +1,4 @@
-use sodium_sys::crypto::crypto_verify;
+use sodium_sys::crypto::verify;
 use test::Bencher;
 
 #[bench]
@@ -8,8 +8,8 @@ fn bench_verify_16(b: &mut Bencher) {
     let a3 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 
     b.iter(|| {
-        crypto_verify::verify_16(&a1, &a2);
-        crypto_verify::verify_16(&a1, &a3)
+        verify::verify_16(&a1, &a2);
+        verify::verify_16(&a1, &a3)
     });
 }
 
@@ -21,8 +21,8 @@ fn bench_verify_32(b: &mut Bencher) {
               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 
     b.iter(|| {
-        crypto_verify::verify_32(&a1, &a2);
-        crypto_verify::verify_32(&a1, &a3)
+        verify::verify_32(&a1, &a2);
+        verify::verify_32(&a1, &a3)
     });
 }
 
@@ -36,7 +36,7 @@ fn bench_verify_64(b: &mut Bencher) {
               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 
     b.iter(|| {
-        crypto_verify::verify_64(&a1, &a2);
-        crypto_verify::verify_64(&a1, &a3)
+        verify::verify_64(&a1, &a2);
+        verify::verify_64(&a1, &a3)
     });
 }

@@ -34,7 +34,8 @@ pub mod utils;
 pub mod version;
 
 pub mod crypto {
-    pub mod crypto_verify;
+    pub mod secretbox;
+    pub mod verify;
 }
 
 pub use self::SSError::*;
