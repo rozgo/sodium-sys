@@ -20,7 +20,11 @@ extern "C" {
                                   k: *const ::libc::c_uchar) -> ::libc::c_int;
 }
 
-pub fn seal<'a>(message: &[u8], key: [u8; KEYBYTES], nonce: [u8; NONCEBYTES]) -> &'a [u8] {
+pub fn gen_key() -> [u8; KEYBYTES] {
+    let mut key = utils::malloc(KEYBYTES);
+}
+
+pub fn seal<'a>(message: &[u8], key: [u8; KEYBYTES], nonce: [u8; NONCEBYTES]) -> &'a mut [u8] {
     let mut ciphertext = utils::malloc((MACBYTES + message.len()) as ::libc::size_t);
 
     unsafe {
@@ -36,7 +40,7 @@ pub fn seal<'a>(message: &[u8], key: [u8; KEYBYTES], nonce: [u8; NONCEBYTES]) ->
     ciphertext
 }
 
-pub fn open<'a>(ciphertext: &[u8], key: [u8; KEYBYTES], nonce: [u8; NONCEBYTES]) -> &'a [u8] {
+pub fn open<'a>(ciphertext: &[u8], key: [u8; KEYBYTES], nonce: [u8; NONCEBYTES]) -> &'a mut [u8] {
     let mut message = utils::malloc((ciphertext.len() - MACBYTES) as ::libc::size_t);
 
     unsafe {
@@ -47,5 +51,6 @@ pub fn open<'a>(ciphertext: &[u8], key: [u8; KEYBYTES], nonce: [u8; NONCEBYTES])
                                    key.as_ptr());
     }
 
+    utils::mprotect_readonly(message);
     message
 }
