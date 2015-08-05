@@ -10,6 +10,26 @@ const TEST_CIPHERTEXT: [u8; 20] = [175, 153, 180, 147, 246, 123, 253, 41,
                                    178, 91, 200, 139];
 
 #[bench]
+fn bench_gen_key(b: &mut Bencher) {
+    use sodium_sys::core::init;
+    init();
+    b.iter(|| {
+        let k = secretbox::gen_key();
+        utils::free(k);
+    });
+}
+
+#[bench]
+fn bench_gen_nonce(b: &mut Bencher) {
+    use sodium_sys::core::init;
+    init();
+    b.iter(|| {
+        let n = secretbox::gen_nonce();
+        utils::free(n);
+    });
+}
+
+#[bench]
 fn bench_seal(b: &mut Bencher) {
     use sodium_sys::core::init;
     init();

@@ -1,4 +1,5 @@
-use std::ffi::{CStr,CString};
+
+use std::ffi::{CStr, CString};
 use std::slice;
 use std::str;
 
@@ -103,7 +104,7 @@ pub fn memcmp(m1: &[u8], m2: &[u8]) -> i32 {
 /// assert!(bin2hex(&v).unwrap() == "0001feff");
 /// ```
 pub fn bin2hex(mem: &[u8]) -> Result<String, ::SSError> {
-    let hlen = ( mem.len() * 2 ) + 1;
+    let hlen = (mem.len() * 2) + 1;
     let mut bufvec: Vec<i8> = Vec::with_capacity(hlen);
     for _ in 0..hlen {
         bufvec.push(0);
@@ -368,9 +369,9 @@ pub fn allocarray<'a>(count: ::libc::size_t, size: ::libc::size_t) -> &'a mut [u
 /// assert!(v[127] == 255);
 /// free(v);
 /// ```
-pub fn free(mem: &mut [u8]) {
+pub fn free(mem: &[u8]) {
     unsafe {
-        sodium_free(mem.as_mut_ptr() as *mut ::libc::c_void);
+        sodium_free(mem.as_ptr() as *mut ::libc::c_void);
     }
 }
 

@@ -22,7 +22,8 @@
 //! [Sodium](https://github.com/jedisct1/libsodium).
 #![allow(non_upper_case_globals)]
 extern crate libc;
-#[cfg(test)] extern crate regex;
+#[cfg(test)]
+extern crate regex;
 
 use std::ffi::NulError;
 use std::str;
