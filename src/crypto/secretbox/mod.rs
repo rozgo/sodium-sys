@@ -12,10 +12,10 @@ pub const BOXZEROBYTES: usize = crypto_secretbox_xsalsa20poly1305::BOXZEROBYTES;
 
 extern "C" {
     fn crypto_secretbox_easy(c: *mut ::libc::c_uchar, m: *const ::libc::c_uchar,
-                             mlen: ::libc::size_t, n: *const ::libc::c_uchar,
+                             mlen: ::libc::c_ulonglong, n: *const ::libc::c_uchar,
                              k: *const ::libc::c_uchar) -> ::libc::c_int;
     fn crypto_secretbox_open_easy(m: *mut ::libc::c_uchar, c: *const ::libc::c_uchar,
-                                  clen: ::libc::size_t, n: *const ::libc::c_uchar,
+                                  clen: ::libc::c_ulonglong, n: *const ::libc::c_uchar,
                                   k: *const ::libc::c_uchar) -> ::libc::c_int;
 }
 
@@ -51,7 +51,7 @@ pub fn seal<'a>(message: &[u8], key: &[u8], nonce: &[u8]) -> &'a mut [u8] {
     unsafe {
         crypto_secretbox_easy(ciphertext.as_mut_ptr() as *mut ::libc::c_uchar,
                               message.as_ptr() as *const ::libc::c_uchar,
-                              message.len() as ::libc::size_t,
+                              message.len() as ::libc::c_ulonglong,
                               nonce.as_ptr() as *const ::libc::c_uchar,
                               key.as_ptr() as *const ::libc::c_uchar);
 
@@ -67,7 +67,7 @@ pub fn open<'a>(ciphertext: &[u8], key: [u8; KEYBYTES], nonce: [u8; NONCEBYTES])
     unsafe {
         crypto_secretbox_open_easy(message.as_mut_ptr(),
                                    ciphertext.as_ptr(),
-                                   ciphertext.len() as ::libc::size_t,
+                                   ciphertext.len() as ::libc::c_ulonglong,
                                    nonce.as_ptr(),
                                    key.as_ptr());
     }
