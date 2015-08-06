@@ -1,5 +1,4 @@
 
-use randombytes;
 use utils;
 
 pub mod crypto_secretbox_xsalsa20poly1305;
@@ -20,20 +19,6 @@ extern "C" {
                                   k: *const ::libc::c_uchar) -> ::libc::c_int;
 }
 
-pub fn gen_key<'a>() -> &'a mut [u8] {
-    let mut key = utils::malloc(KEYBYTES);
-    randombytes::random_byte_array(&mut key);
-    utils::mprotect_readonly(key);
-    key
-}
-
-pub fn gen_nonce<'a>() -> &'a [u8] {
-    let nonce = utils::malloc(NONCEBYTES);
-    randombytes::random_byte_array(&mut nonce);
-    utils::mprotect_readonly(nonce);
-    nonce
-}
-
 /// The *seal()* function encrypts a message with a key and a nonce.
 ///
 /// The key should be KEYBYTES bytes and the nonce should be NONCEBYTES bytes.
@@ -45,19 +30,17 @@ pub fn gen_nonce<'a>() -> &'a [u8] {
 ///
 /// ```
 /// use sodium_sys::{core,randombytes,utils};
-/// use sodium_sys::crypto::secretbox;
+/// use sodium_sys::crypto::{key,secretbox};
 ///
 /// core::init();
-/// let mut key = utils::malloc(secretbox::KEYBYTES);
+/// let key = key::Key::new(secretbox::KEYBYTES);
+/// key.activate();
 /// let mut nonce = utils::malloc(secretbox::NONCEBYTES);
-/// randombytes::random_byte_array(&mut key);
 /// randombytes::random_byte_array(&mut nonce);
-/// utils::mprotect_readonly(&mut key);
 /// utils::mprotect_readonly(&mut nonce);
-/// let ciphertext = secretbox::seal(b"test", key, nonce);
+/// let ciphertext = secretbox::seal(b"test", key.bytes(), nonce);
 /// utils::mprotect_readonly(ciphertext);
 /// println!("{:?}", ciphertext);
-/// utils::free(&key);
 /// utils::free(&nonce);
 /// ```
 pub fn seal<'a>(message: &[u8], key: &[u8], nonce: &[u8]) -> &'a mut [u8] {

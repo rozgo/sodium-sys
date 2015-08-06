@@ -305,11 +305,11 @@ pub fn munlock(mem: &[u8]) -> i32 {
 /// assert!(v[0] == 1);
 /// free(v);
 /// ```
-pub fn malloc<'a>(size: usize) -> &'a [u8] {
+pub fn malloc<'a>(size: usize) -> &'a mut [u8] {
     unsafe {
         let ptr = sodium_malloc(size as ::libc::size_t) as *mut u8;
         assert!(!ptr.is_null());
-        slice::from_raw_parts(ptr, size)
+        slice::from_raw_parts_mut(ptr, size)
     }
 }
 
@@ -399,9 +399,9 @@ pub fn free(mem: &[u8]) {
 /// // v[1] = 1;           // If you uncomment this line the program will fail (no write).
 /// free(&mut v);
 /// ```
-pub fn mprotect_noaccess(mem: &mut [u8]) {
+pub fn mprotect_noaccess(mem: &[u8]) {
     unsafe {
-        sodium_mprotect_noaccess(mem.as_mut_ptr() as *mut ::libc::c_void);
+        sodium_mprotect_noaccess(mem.as_ptr() as *mut ::libc::c_void);
     }
 }
 
@@ -456,9 +456,9 @@ pub fn mprotect_readonly(mem: &[u8]) {
 /// assert!(v[1] == 1);
 /// free(&mut v);
 /// ```
-pub fn mprotect_readwrite(mem: &mut [u8]) {
+pub fn mprotect_readwrite(mem: &[u8]) {
     unsafe {
-        sodium_mprotect_readwrite(mem.as_mut_ptr() as *mut ::libc::c_void);
+        sodium_mprotect_readwrite(mem.as_ptr() as *mut ::libc::c_void);
     }
 }
 

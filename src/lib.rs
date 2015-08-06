@@ -35,6 +35,7 @@ pub mod utils;
 pub mod version;
 
 pub mod crypto {
+    pub mod key;
     pub mod secretbox;
     pub mod verify;
 }

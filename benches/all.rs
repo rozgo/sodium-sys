@@ -6,6 +6,7 @@ mod randombytes;
 mod utils;
 
 mod crypto {
+    mod crypto_key;
     mod crypto_secretbox;
     mod crypto_verify;
 }
