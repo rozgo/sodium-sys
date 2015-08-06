@@ -70,5 +70,41 @@ fn bench_allocarray_free(b: &mut Bencher) {
         let mut v = utils::allocarray(count, size);
         utils::free(&mut v);
     });
+}
 
+#[bench]
+fn bench_malloc_noaccess_free(b: &mut Bencher) {
+    use sodium_sys::core::init;
+    let _ = init();
+
+    b.iter(|| {
+        let mut v = utils::malloc(64);
+        utils::mprotect_noaccess(&mut v);
+        utils::free(&mut v)
+    });
+}
+
+#[bench]
+fn bench_malloc_readonly_free(b: &mut Bencher) {
+    use sodium_sys::core::init;
+    let _ = init();
+    
+    b.iter(|| {
+        let mut v = utils::malloc(64);
+        utils::mprotect_readonly(&mut v);
+        utils::free(&mut v)
+    });
+}
+
+#[bench]
+fn bench_malloc_noaccess_readwrite_free(b: &mut Bencher) {
+    use sodium_sys::core::init;
+    let _ = init();
+
+    b.iter(|| {
+        let mut v = utils::malloc(64);
+        utils::mprotect_noaccess(&mut v);
+        utils::mprotect_readwrite(&mut v);
+        utils::free(&mut v)
+    });
 }
