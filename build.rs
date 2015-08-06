@@ -21,8 +21,7 @@ fn main() {
 fn build_libsodium() {
     let target = env::var("TARGET").unwrap();
     let windows = target.contains("windows");
-    let src = PathBuf::from(&env::var_os("CARGO_MANIFEST_DIR").unwrap())
-                       .join("libsodium");
+    let src = PathBuf::from(&env::var_os("CARGO_MANIFEST_DIR").unwrap()).join("libsodium");
     let dst = PathBuf::from(&env::var_os("OUT_DIR").unwrap());
     let _ = fs::create_dir(&dst);
 
@@ -62,7 +61,6 @@ fn build_libsodium() {
         println!("cargo:rustc-link-search=native={}/lib", dst.display());
         println!("cargo:rustc-link-lib=libsodium");
         println!("cargo:root={}", dst.display());
-        //println!("cargo:include={}/include", dst.display());
     }
 }
 fn run(cmd: &mut Command) {
