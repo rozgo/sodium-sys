@@ -1,3 +1,4 @@
+use sodium_sys::utils;
 use sodium_sys::crypto::secretbox;
 
 const TEST_KEY: [u8; secretbox::KEYBYTES] = [0; secretbox::KEYBYTES];
@@ -12,6 +13,7 @@ fn seal() {
     ::test_init();
     let ciphertext = secretbox::seal(TEST_MESSAGE, &TEST_KEY, &TEST_NONCE);
     assert!(ciphertext == TEST_CIPHERTEXT);
+    utils::free(ciphertext);
 }
 
 #[test]
@@ -19,4 +21,5 @@ fn open() {
     ::test_init();
     let decrypted = secretbox::open(&TEST_CIPHERTEXT, TEST_KEY, TEST_NONCE);
     assert!(decrypted == TEST_MESSAGE);
+    utils::free(decrypted);
 }
