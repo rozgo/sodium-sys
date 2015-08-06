@@ -31,7 +31,8 @@ extern "C" {
     fn sodium_mprotect_noaccess(ptr: *mut ::libc::c_void) -> ::libc::c_int;
     fn sodium_mprotect_readonly(ptr: *mut ::libc::c_void) -> ::libc::c_int;
     fn sodium_mprotect_readwrite(ptr: *mut ::libc::c_void) -> ::libc::c_int;
-    //fn sodium_increment(n: *mut ::libc::c_uchar, nlen: ::libc::size_t) -> ();
+    #[cfg(feature = "latest")]
+    fn sodium_increment(n: *mut ::libc::c_uchar, nlen: ::libc::size_t) -> ();
 }
 
 /// After use, sensitive data should be overwritten, but *memset()* and hand-written code can be
@@ -462,8 +463,9 @@ pub fn mprotect_readwrite(mem: &[u8]) {
     }
 }
 
-// pub fn increment(n: &mut [u8]) {
-//     unsafe {
-//         sodium_increment(n.as_mut_ptr(), n.len() as ::libc::size_t);
-//     }
-// }
+#[cfg(feature = "latest")]
+pub fn increment(n: &mut [u8]) {
+    unsafe {
+        sodium_increment(n.as_mut_ptr(), n.len() as ::libc::size_t);
+    }
+}

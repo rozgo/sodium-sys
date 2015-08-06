@@ -102,3 +102,11 @@ fn bench_malloc_noaccess_readwrite_free(b: &mut Bencher) {
         utils::free(&mut v)
     });
 }
+
+#[cfg(feature = "latest")]
+#[bench]
+fn bench_increment(b: &mut Bencher) {
+    ::test_init();
+    let mut v = [0];
+    b.iter(|| { utils::increment(&mut v) })
+}

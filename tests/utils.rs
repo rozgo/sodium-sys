@@ -122,9 +122,10 @@ fn malloc_noaccess_readwrite_free() {
     utils::free(&mut v);
 }
 
-// #[test]
-// fn increment() {
-//     let mut nonce = [1];
-//     utils::increment(&mut nonce);
-//     assert!(nonce == [2]);
-// }
+#[cfg(feature = "latest")]
+#[test]
+fn increment() {
+    let mut nonce = [1];
+    utils::increment(&mut nonce);
+    assert!(nonce == [2]);
+}

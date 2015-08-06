@@ -8,6 +8,9 @@ keywords = ["libsodium", "NaCl", "crypto", "sodium-sys"]
 links = "sodium"
 build = "build.rs"
 
+[features]
+latest = []
+
 [build-dependencies]
 pkg-config = "*"
 
