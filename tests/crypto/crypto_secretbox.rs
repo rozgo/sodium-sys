@@ -12,6 +12,7 @@ const TEST_CIPHERTEXT: [u8; 20] = [175, 153, 180, 147, 246, 123, 253, 41,
 fn seal() {
     ::test_init();
     let ciphertext = secretbox::seal(TEST_MESSAGE, &TEST_KEY, &TEST_NONCE);
+    println!("{:?}", ciphertext);
     assert!(ciphertext == TEST_CIPHERTEXT);
     utils::free(ciphertext);
 }

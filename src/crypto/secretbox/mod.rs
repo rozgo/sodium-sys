@@ -49,11 +49,11 @@ pub fn seal<'a>(message: &[u8], key: &[u8], nonce: &[u8]) -> &'a mut [u8] {
     let mut ciphertext = utils::malloc(MACBYTES + message.len());
 
     unsafe {
-        crypto_secretbox_easy(ciphertext.as_mut_ptr(),
-                              message.as_ptr(),
+        crypto_secretbox_easy(ciphertext.as_mut_ptr() as *mut ::libc::c_uchar,
+                              message.as_ptr() as *const ::libc::c_uchar,
                               message.len() as ::libc::size_t,
-                              nonce.as_ptr(),
-                              key.as_ptr());
+                              nonce.as_ptr() as *const ::libc::c_uchar,
+                              key.as_ptr() as *const ::libc::c_uchar);
 
     }
 
