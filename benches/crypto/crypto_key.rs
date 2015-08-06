@@ -4,8 +4,7 @@ use test::Bencher;
 
 #[bench]
 fn bench_key(b: &mut Bencher) {
-    use sodium_sys::core::init;
-    init();
+    ::test_init();
     b.iter(|| {
         key::Key::new(secretbox::KEYBYTES)
     });

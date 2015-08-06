@@ -11,8 +11,7 @@ const TEST_CIPHERTEXT: [u8; 20] = [175, 153, 180, 147, 246, 123, 253, 41,
 
 #[bench]
 fn bench_seal(b: &mut Bencher) {
-    use sodium_sys::core::init;
-    init();
+    ::test_init();
     b.iter(|| {
         let mut ciphertext = secretbox::seal(TEST_MESSAGE, &TEST_KEY, &TEST_NONCE);
         utils::free(&mut ciphertext);
@@ -21,8 +20,7 @@ fn bench_seal(b: &mut Bencher) {
 
 #[bench]
 fn bench_open(b: &mut Bencher) {
-    use sodium_sys::core::init;
-    init();
+    ::test_init();
     b.iter(|| {
         let mut message = secretbox::open(&TEST_CIPHERTEXT, TEST_KEY, TEST_NONCE);
         utils::free(&mut message);

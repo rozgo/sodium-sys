@@ -48,8 +48,7 @@ fn hex2bin() {
 
 #[test]
 fn mlock_munlock() {
-    use core::init;
-    let _ = init();
+    ::test_init();
     let v = [0, 1, 2, 3, 4, 5, 6, 7];
     assert!(utils::mlock(&v) == 0);
     assert!(utils::munlock(&v) == 0);
@@ -58,8 +57,7 @@ fn mlock_munlock() {
 
 #[test]
 fn malloc_free() {
-    use core::init;
-    let _ = init();
+    ::test_init();
     let mut v = utils::malloc(64);
     v[0] = 1;
     assert!(v.len() == 64);
@@ -69,8 +67,7 @@ fn malloc_free() {
 
 #[test]
 fn allocarray_free() {
-    use core::init;
-    let _ = init();
+    ::test_init();
     let count = 2;
     let size = 16;
     let mut v = utils::allocarray(count, size);
@@ -84,8 +81,7 @@ fn allocarray_free() {
 
 #[test]
 fn malloc_noaccess_free() {
-    use core::init;
-    let _ = init();
+    ::test_init();
     let mut v = utils::malloc(64);
     v[0] = 1;
     assert!(v.len() == 64);
@@ -98,8 +94,7 @@ fn malloc_noaccess_free() {
 
 #[test]
 fn malloc_readonly_free() {
-    use core::init;
-    let _ = init();
+    ::test_init();
     let mut v = utils::malloc(64);
     v[0] = 1;
     assert!(v.len() == 64);
@@ -112,8 +107,7 @@ fn malloc_readonly_free() {
 
 #[test]
 fn malloc_noaccess_readwrite_free() {
-    use core::init;
-    let _ = init();
+    ::test_init();
     let mut v = utils::malloc(64);
     v[0] = 1;
     assert!(v.len() == 64);

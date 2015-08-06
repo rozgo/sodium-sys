@@ -9,16 +9,14 @@ const TEST_CIPHERTEXT: [u8; 20] = [175, 153, 180, 147, 246, 123, 253, 41,
 
 #[test]
 fn seal() {
-    use sodium_sys::core::init;
-    init();
+    ::test_init();
     let ciphertext = secretbox::seal(TEST_MESSAGE, &TEST_KEY, &TEST_NONCE);
     assert!(ciphertext == TEST_CIPHERTEXT);
 }
 
 #[test]
 fn open() {
-    use sodium_sys::core::init;
-    init();
+    ::test_init();
     let decrypted = secretbox::open(&TEST_CIPHERTEXT, TEST_KEY, TEST_NONCE);
     assert!(decrypted == TEST_MESSAGE);
 }

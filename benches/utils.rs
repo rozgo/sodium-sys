@@ -43,16 +43,14 @@ fn bench_hex2bin_multiignore(b: &mut Bencher) {
 
 #[bench]
 fn bench_mlock_munlock(b: &mut Bencher) {
-    use sodium_sys::core::init;
-    let _ = init();
+    ::test_init();
     let v = [0, 1, 2, 3, 4, 5, 6, 7];
     b.iter(|| { utils::mlock(&v); utils::munlock(&v) });
 }
 
 #[bench]
 fn bench_malloc_free(b: &mut Bencher) {
-    use sodium_sys::core::init;
-    let _ = init();
+    ::test_init();
     b.iter(|| {
         let mut v = utils::malloc(64);
         utils::free(&mut v)
@@ -61,8 +59,7 @@ fn bench_malloc_free(b: &mut Bencher) {
 
 #[bench]
 fn bench_allocarray_free(b: &mut Bencher) {
-    use sodium_sys::core::init;
-    let _ = init();
+    ::test_init();
     let count = 2;
     let size = 16;
 
@@ -74,8 +71,7 @@ fn bench_allocarray_free(b: &mut Bencher) {
 
 #[bench]
 fn bench_malloc_noaccess_free(b: &mut Bencher) {
-    use sodium_sys::core::init;
-    let _ = init();
+    ::test_init();
 
     b.iter(|| {
         let mut v = utils::malloc(64);
@@ -86,9 +82,8 @@ fn bench_malloc_noaccess_free(b: &mut Bencher) {
 
 #[bench]
 fn bench_malloc_readonly_free(b: &mut Bencher) {
-    use sodium_sys::core::init;
-    let _ = init();
-    
+    ::test_init();
+
     b.iter(|| {
         let mut v = utils::malloc(64);
         utils::mprotect_readonly(&mut v);
@@ -98,8 +93,7 @@ fn bench_malloc_readonly_free(b: &mut Bencher) {
 
 #[bench]
 fn bench_malloc_noaccess_readwrite_free(b: &mut Bencher) {
-    use sodium_sys::core::init;
-    let _ = init();
+    ::test_init();
 
     b.iter(|| {
         let mut v = utils::malloc(64);
