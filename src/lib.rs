@@ -22,18 +22,22 @@
 //! [Sodium](https://github.com/jedisct1/libsodium).
 #![allow(non_upper_case_globals)]
 extern crate libc;
-#[cfg(test)] extern crate regex;
+#[cfg(test)]
+extern crate regex;
 
 use std::ffi::NulError;
 use std::str;
 use std::string;
 
 pub mod core;
+pub mod randombytes;
 pub mod utils;
 pub mod version;
 
 pub mod crypto {
-    pub mod crypto_verify;
+    pub mod key;
+    pub mod secretbox;
+    pub mod verify;
 }
 
 pub use self::SSError::*;

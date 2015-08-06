@@ -1,4 +1,5 @@
-use std::ffi::{CStr,CString};
+
+use std::ffi::{CStr, CString};
 use std::slice;
 use std::str;
 
@@ -27,9 +28,9 @@ extern "C" {
     fn sodium_malloc(size: ::libc::size_t) -> *mut ::libc::c_void;
     fn sodium_allocarray(count: ::libc::size_t, size: ::libc::size_t) -> *mut ::libc::c_void;
     fn sodium_free(ptr: *mut ::libc::c_void) -> ();
-    //pub fn sodium_mprotect_noaccess(ptr: *mut ::libc::c_void) -> ::libc::c_int;
-    //pub fn sodium_mprotect_readonly(ptr: *mut ::libc::c_void) -> ::libc::c_int;
-    //pub fn sodium_mprotect_readwrite(ptr: *mut ::libc::c_void) -> ::libc::c_int;
+    fn sodium_mprotect_noaccess(ptr: *mut ::libc::c_void) -> ::libc::c_int;
+    fn sodium_mprotect_readonly(ptr: *mut ::libc::c_void) -> ::libc::c_int;
+    fn sodium_mprotect_readwrite(ptr: *mut ::libc::c_void) -> ::libc::c_int;
     //fn sodium_increment(n: *mut ::libc::c_uchar, nlen: ::libc::size_t) -> ();
 }
 
@@ -103,7 +104,7 @@ pub fn memcmp(m1: &[u8], m2: &[u8]) -> i32 {
 /// assert!(bin2hex(&v).unwrap() == "0001feff");
 /// ```
 pub fn bin2hex(mem: &[u8]) -> Result<String, ::SSError> {
-    let hlen = ( mem.len() * 2 ) + 1;
+    let hlen = (mem.len() * 2) + 1;
     let mut bufvec: Vec<i8> = Vec::with_capacity(hlen);
     for _ in 0..hlen {
         bufvec.push(0);
@@ -304,11 +305,11 @@ pub fn munlock(mem: &[u8]) -> i32 {
 /// assert!(v[0] == 1);
 /// free(v);
 /// ```
-pub fn malloc<'a>(size: ::libc::size_t) -> &'a mut [u8] {
+pub fn malloc<'a>(size: usize) -> &'a mut [u8] {
     unsafe {
-        let ptr = sodium_malloc(size) as *mut u8;
+        let ptr = sodium_malloc(size as ::libc::size_t) as *mut u8;
         assert!(!ptr.is_null());
-        slice::from_raw_parts_mut(ptr, size as usize)
+        slice::from_raw_parts_mut(ptr, size)
     }
 }
 
@@ -368,9 +369,96 @@ pub fn allocarray<'a>(count: ::libc::size_t, size: ::libc::size_t) -> &'a mut [u
 /// assert!(v[127] == 255);
 /// free(v);
 /// ```
-pub fn free(mem: &mut [u8]) {
+pub fn free(mem: &[u8]) {
     unsafe {
-        sodium_free(mem.as_mut_ptr() as *mut ::libc::c_void);
+        sodium_free(mem.as_ptr() as *mut ::libc::c_void);
+    }
+}
+
+/// The *mprotect_noaccess()* function makes a region allocated using *malloc()* or *allocarray()*
+/// inaccessible. It cannot be read or written, but the data are preserved.
+///
+/// This function can be used to make confidential data inacessible except when actually needed for
+/// a specific operation.
+///
+/// *mprotect_noaccess()* safely wraps the *sodium_mprotect_noaccess()* function.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core::init;
+/// use sodium_sys::utils::{free,malloc,mprotect_noaccess};
+///
+/// let _ = init();
+/// let mut v = malloc(64);
+/// v[0] = 1;
+/// assert!(v.len() == 64);
+/// assert!(v[0] == 1);
+/// mprotect_noaccess(&mut v);
+/// // assert!(v[0] == 1); // If you uncomment this line the program will fail (no read).
+/// // v[1] = 1;           // If you uncomment this line the program will fail (no write).
+/// free(&mut v);
+/// ```
+pub fn mprotect_noaccess(mem: &[u8]) {
+    unsafe {
+        sodium_mprotect_noaccess(mem.as_ptr() as *mut ::libc::c_void);
+    }
+}
+
+/// The *mprotect_readonly()* function marks a region allocated using *malloc()* or *allocarray()*
+/// as read-only.
+///
+/// Attempting to modify the data will cause the process to terminate.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core::init;
+/// use sodium_sys::utils::{free,malloc,mprotect_readonly};
+///
+/// let _ = init();
+/// let mut v = malloc(64);
+/// v[0] = 1;
+/// assert!(v.len() == 64);
+/// assert!(v[0] == 1);
+/// mprotect_readonly(&mut v);
+/// assert!(v[0] == 1);
+/// // v[1] = 1;  // If you uncomment this line the program will fail (no write).
+/// free(&mut v);
+/// ```
+pub fn mprotect_readonly(mem: &[u8]) {
+    unsafe {
+        sodium_mprotect_readonly(mem.as_ptr() as *mut ::libc::c_void);
+    }
+}
+
+/// The *mprotect_readwrite()* function marks a region allocated using *malloc()* or *allocarray()*
+/// as readable and writable, after having been protected using *mprotect_readonly()* or
+/// *mprotect_noaccess()*.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core::init;
+/// use sodium_sys::utils::{free,malloc,mprotect_noaccess,mprotect_readwrite};
+///
+/// let _ = init();
+/// let mut v = malloc(64);
+/// v[0] = 1;
+/// assert!(v.len() == 64);
+/// assert!(v[0] == 1);
+/// mprotect_noaccess(&mut v);
+/// // assert!(v[0] == 1);  // If you uncomment this line the program will fail (no read).
+/// // v[1] = 1;            // If you uncomment this line the program will fail (no write).
+/// mprotect_readwrite(&mut v);
+/// assert!(v[0] == 1);
+/// v[1] = 1;
+/// assert!(v[1] == 1);
+/// free(&mut v);
+/// ```
+pub fn mprotect_readwrite(mem: &[u8]) {
+    unsafe {
+        sodium_mprotect_readwrite(mem.as_ptr() as *mut ::libc::c_void);
     }
 }
 

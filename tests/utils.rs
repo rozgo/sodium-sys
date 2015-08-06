@@ -82,6 +82,52 @@ fn allocarray_free() {
     utils::free(&mut v);
 }
 
+#[test]
+fn malloc_noaccess_free() {
+    use core::init;
+    let _ = init();
+    let mut v = utils::malloc(64);
+    v[0] = 1;
+    assert!(v.len() == 64);
+    assert!(v[0] == 1);
+    utils::mprotect_noaccess(&mut v);
+    // assert!(v[0] == 1);  // If you uncomment this line the program will fail (no read).
+    // v[1] = 1;            // If you uncomment this line the program will fail (no write).
+    utils::free(&mut v);
+}
+
+#[test]
+fn malloc_readonly_free() {
+    use core::init;
+    let _ = init();
+    let mut v = utils::malloc(64);
+    v[0] = 1;
+    assert!(v.len() == 64);
+    assert!(v[0] == 1);
+    utils::mprotect_readonly(&mut v);
+    assert!(v[0] == 1);
+    // v[1] = 1;  // If you uncomment this line the program will fail (no write).
+    utils::free(&mut v);
+}
+
+#[test]
+fn malloc_noaccess_readwrite_free() {
+    use core::init;
+    let _ = init();
+    let mut v = utils::malloc(64);
+    v[0] = 1;
+    assert!(v.len() == 64);
+    assert!(v[0] == 1);
+    utils::mprotect_noaccess(&mut v);
+    // assert!(v[0] == 1);  // If you uncomment this line the program will fail (no read).
+    // v[1] = 1;            // If you uncomment this line the program will fail (no write).
+    utils::mprotect_readwrite(&mut v);
+    assert!(v[0] == 1);
+    v[1] = 1;
+    assert!(v[1] == 1);
+    utils::free(&mut v);
+}
+
 // #[test]
 // fn increment() {
 //     let mut nonce = [1];
