@@ -22,7 +22,7 @@ fn bench_seal(b: &mut Bencher) {
 fn bench_open(b: &mut Bencher) {
     ::test_init();
     b.iter(|| {
-        let mut message = secretbox::open(&TEST_CIPHERTEXT, TEST_KEY, TEST_NONCE);
+        let mut message = secretbox::open(&TEST_CIPHERTEXT, &TEST_KEY, &TEST_NONCE).unwrap();
         utils::free(&mut message);
     });
 }

@@ -36,6 +36,7 @@ pub mod version;
 
 pub mod crypto {
     pub mod key;
+    pub mod nonce;
     pub mod secretbox;
     pub mod verify;
 }
@@ -45,6 +46,7 @@ pub use self::SSError::*;
 #[derive(Debug)]
 pub enum SSError {
     CSTR(NulError),
+    DECRYPT(&'static str),
     STR(str::Utf8Error),
     STRING(string::FromUtf8Error),
 }

@@ -20,7 +20,7 @@ fn seal() {
 #[test]
 fn open() {
     ::test_init();
-    let decrypted = secretbox::open(&TEST_CIPHERTEXT, TEST_KEY, TEST_NONCE);
+    let decrypted = secretbox::open(&TEST_CIPHERTEXT, &TEST_KEY, &TEST_NONCE).unwrap();
     assert!(decrypted == TEST_MESSAGE);
     utils::free(decrypted);
 }

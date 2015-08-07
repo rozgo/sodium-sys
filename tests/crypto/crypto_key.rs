@@ -1,5 +1,4 @@
-use sodium_sys::crypto::key;
-use sodium_sys::crypto::secretbox;
+use sodium_sys::crypto::{key,secretbox};
 
 #[test]
 fn key() {

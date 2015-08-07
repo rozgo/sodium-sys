@@ -464,6 +464,25 @@ pub fn mprotect_readwrite(mem: &[u8]) {
 }
 
 #[cfg(feature = "latest")]
+/// The sodium_increment() function takes a pointer to an arbitrary length unsigned number, and
+/// increments it.
+///
+/// It runs in constant-time for a given length, and considers the number to be encoded in
+/// little-endian format.
+///
+/// *increment()* can be used to increment nonces.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::utils;
+///
+/// let mut nonce = [0];
+/// utils::increment(&mut nonce);
+/// assert!(nonce == [1]);
+/// utils::increment(&mut nonce);
+/// assert!(nonce == [2]);
+/// ```
 pub fn increment(n: &mut [u8]) {
     unsafe {
         sodium_increment(n.as_mut_ptr(), n.len() as ::libc::size_t);
