@@ -464,7 +464,7 @@ pub fn mprotect_readwrite(mem: &[u8]) {
 }
 
 #[cfg(feature = "latest")]
-/// The sodium_increment() function takes a pointer to an arbitrary length unsigned number, and
+/// The *increment()* function takes a pointer to an arbitrary length unsigned number, and
 /// increments it.
 ///
 /// It runs in constant-time for a given length, and considers the number to be encoded in
