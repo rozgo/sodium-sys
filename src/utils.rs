@@ -1,4 +1,3 @@
-
 use std::ffi::{CStr, CString};
 use std::slice;
 use std::str;
