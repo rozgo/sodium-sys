@@ -1,22 +1,25 @@
-//! [Sodium](https://github.com/jedisct1/libsodium) is a modern, easy-to-use software library for
-//! encryption, decryption, signatures, password hashing and more.
+//! [Sodium](https://github.com/jedisct1/libsodium) is a modern, easy-to-use
+//! software library for encryption, decryption, signatures, password hashing
+//! and more.
 //!
 //! It is a portable, cross-compilable, installable, packageable fork of
-//! [NaCl](http://nacl.cr.yp.to), with a compatible API, and an extended API to improve usability
-//! even further.
+//! [NaCl](http://nacl.cr.yp.to), with a compatible API, and an extended API to
+//! improve usability even further.
 //!
-//! Its goal is to provide all of the core operations needed to build higher-level cryptographic
-//! tools.
+//! Its goal is to provide all of the core operations needed to build
+//! higher-level cryptographic tools.
 //!
-//! Sodium supports a variety of compilers and operating systems, including Windows (with MinGW or
-//! Visual Studio, x86 and x64), iOS and Android.
+//! Sodium supports a variety of compilers and operating systems, including
+//! Windows (with MinGW or Visual Studio, x86 and x64), iOS and Android.
 //!
-//! The design choices emphasize security, and "magic constants" have clear rationales.
+//! The design choices emphasize security, and "magic constants" have clear
+//! rationales.
 //!
-//! And despite the emphasis on high security, primitives are faster across-the-board than most
-//! implementations of the NIST standards.
+//! And despite the emphasis on high security, primitives are faster
+//! across-the-board than most implementations of the NIST standards.
 //!
 //! Version 1.0.3 was released on May 9, 2015.
+//! Building feature "latest" will build with version 1.0.4.
 //!
 //! [sodium-sys](https://github.com/rustyhorde/sodium-sys) is rust bindings for
 //! [Sodium](https://github.com/jedisct1/libsodium).
