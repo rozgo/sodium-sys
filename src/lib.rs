@@ -50,6 +50,7 @@ pub use self::SSError::*;
 pub enum SSError {
     CSTR(NulError),
     DECRYPT(&'static str),
+    ENCRYPT(&'static str),
     STR(str::Utf8Error),
     STRING(string::FromUtf8Error),
 }

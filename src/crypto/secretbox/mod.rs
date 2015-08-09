@@ -8,8 +8,9 @@
 //! The nonce doesn't have to be confidential, but it should never ever be
 //! reused with the same
 //! key.
-use ::SSError;
-use ::SSError::DECRYPT;
+use libc::{c_uchar,c_int,c_ulonglong};
+use SSError;
+use SSError::{DECRYPT,ENCRYPT};
 use utils;
 
 pub mod crypto_secretbox_xsalsa20poly1305;
@@ -23,18 +24,42 @@ pub const BOXZEROBYTES: usize =
                         crypto_secretbox_xsalsa20poly1305::BOXZEROBYTES;
 
 extern "C" {
-    fn crypto_secretbox_easy(c: *mut ::libc::c_uchar,
-                             m: *const ::libc::c_uchar,
-                             mlen: ::libc::c_ulonglong,
-                             n: *const ::libc::c_uchar,
-                             k: *const ::libc::c_uchar) ->
-                             ::libc::c_int;
-    fn crypto_secretbox_open_easy(m: *mut ::libc::c_uchar,
-                                  c: *const ::libc::c_uchar,
-                                  clen: ::libc::c_ulonglong,
-                                  n: *const ::libc::c_uchar,
-                                  k: *const ::libc::c_uchar) ->
-                                  ::libc::c_int;
+    fn crypto_secretbox_easy(c: *mut c_uchar,
+                             m: *const c_uchar,
+                             mlen: c_ulonglong,
+                             n: *const c_uchar,
+                             k: *const c_uchar) ->
+                             c_int;
+    fn crypto_secretbox_open_easy(m: *mut c_uchar,
+                                  c: *const c_uchar,
+                                  clen: c_ulonglong,
+                                  n: *const c_uchar,
+                                  k: *const c_uchar) ->
+                                  c_int;
+    fn crypto_secretbox_detached(c: *mut c_uchar,
+                                 mac: *mut c_uchar,
+                                 m: *const c_uchar,
+                                 mlen: c_ulonglong,
+                                 n: *const c_uchar,
+                                 k: *const c_uchar) ->
+                                 c_int;
+    fn crypto_secretbox_open_detached(m: *mut c_uchar,
+                                      c: *const c_uchar,
+                                      mac: *const c_uchar,
+                                      clen: c_ulonglong,
+                                      n: *const c_uchar,
+                                      k: *const c_uchar) ->
+                                      c_int;
+    fn crypto_secretbox(c: *mut c_uchar,
+                        m: *const c_uchar,
+                        mlen: c_ulonglong,
+                        n: *const c_uchar,
+                        k: *const c_uchar) -> c_int;
+    fn crypto_secretbox_open(m: *mut c_uchar,
+                             c: *const c_uchar,
+                             clen: c_ulonglong,
+                             n: *const c_uchar,
+                             k: *const c_uchar) -> c_int;
 }
 
 /// The *seal()* function encrypts a message with a key and a nonce.
@@ -75,11 +100,11 @@ pub fn seal<'a>(message: &[u8], key: &[u8], nonce: &[u8]) -> &'a mut [u8] {
 
     unsafe {
         crypto_secretbox_easy(ciphertext.as_mut_ptr() as
-                              *mut ::libc::c_uchar,
-                              message.as_ptr() as *const ::libc::c_uchar,
-                              message.len() as ::libc::c_ulonglong,
-                              nonce.as_ptr() as *const ::libc::c_uchar,
-                              key.as_ptr() as *const ::libc::c_uchar);
+                              *mut c_uchar,
+                              message.as_ptr() as *const c_uchar,
+                              message.len() as c_ulonglong,
+                              nonce.as_ptr() as *const c_uchar,
+                              key.as_ptr() as *const c_uchar);
 
     }
 
@@ -135,9 +160,189 @@ pub fn open<'a>(ciphertext: &[u8],
         res = crypto_secretbox_open_easy(message.as_mut_ptr(),
                                          ciphertext.as_ptr(),
                                          ciphertext.len() as
-                                         ::libc::c_ulonglong,
+                                         c_ulonglong,
                                          nonce.as_ptr(),
                                          key.as_ptr());
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(message);
+        Ok(message)
+    } else {
+        Err(DECRYPT("Unable to decrypt ciphertext"))
+    }
+}
+
+/// This function encrypts a message with a key and a nonce, and returns a tuple
+/// of byte arrays. The first element is the ciphertext, the second is the mac.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core,utils};
+/// use sodium_sys::crypto::{key,nonce,secretbox};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the key and activate for use.
+/// let key = key::Key::new(secretbox::KEYBYTES);
+/// key.activate();
+///
+/// // Create the nonce and activate for use.
+/// let mut nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let (ciphertext,mac) = secretbox::seal_detached(b"test",
+///                                                 key.bytes(),
+///                                                 nonce.bytes());
+/// utils::mprotect_readonly(ciphertext);
+/// utils::mprotect_readonly(mac);
+/// println!("{:?}", ciphertext);
+/// println!("{:?}", mac);
+/// ```
+pub fn seal_detached<'a>(message: &[u8],
+                         key: &[u8],
+                         nonce: &[u8]) -> (&'a mut [u8], &'a mut [u8]) {
+    assert!(key.len() == KEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+    let mut ciphertext = utils::malloc(message.len());
+    let mut mac = utils::malloc(MACBYTES);
+
+    unsafe {
+        crypto_secretbox_detached(ciphertext.as_mut_ptr() as
+                                  *mut c_uchar,
+                                  mac.as_mut_ptr() as *mut c_uchar,
+                                  message.as_ptr() as *const c_uchar,
+                                  message.len() as c_ulonglong,
+                                  nonce.as_ptr() as *const c_uchar,
+                                  key.as_ptr() as *const c_uchar);
+
+    }
+
+    utils::mprotect_readonly(ciphertext);
+    utils::mprotect_readonly(mac);
+
+    (ciphertext, mac)
+}
+
+/// This function verifies and decrypts an encrypted message after verifying
+/// the given mac, and returns the decrypted message result.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core,utils};
+/// use sodium_sys::crypto::{key,nonce,secretbox};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the key and activate for use.
+/// let key = key::Key::new(secretbox::KEYBYTES);
+/// key.activate();
+///
+/// // Create the nonce and activate for use.
+/// let mut nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and mac and protect them as readonly.
+/// let (ciphertext, mac) = secretbox::seal_detached(b"test",
+///                                                  key.bytes(),
+///                                                  nonce.bytes());
+/// utils::mprotect_readonly(ciphertext);
+/// utils::mprotect_readonly(mac);
+///
+/// // Decrypt the ciphertext.
+/// let decrypted = secretbox::open_detached(ciphertext,
+///                                          mac,
+///                                          key.bytes(),
+///                                          nonce.bytes()).unwrap();
+/// assert!(decrypted == b"test");
+/// ```
+pub fn open_detached<'a>(ciphertext: &[u8],
+                         mac: &[u8],
+                         key: &[u8],
+                         nonce: &[u8]) -> Result<&'a mut [u8], SSError> {
+    assert!(mac.len() == MACBYTES);
+    assert!(key.len() == KEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+    let mut message = utils::malloc(ciphertext.len());
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_secretbox_open_detached(message.as_mut_ptr(),
+                                             ciphertext.as_ptr(),
+                                             mac.as_ptr(),
+                                             ciphertext.len() as
+                                             c_ulonglong,
+                                             nonce.as_ptr(),
+                                             key.as_ptr());
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(message);
+        Ok(message)
+    } else {
+        Err(DECRYPT("Unable to decrypt ciphertext"))
+    }
+}
+
+pub fn seal_nacl<'a>(message: &[u8],
+                     key: &[u8],
+                     nonce: &[u8]) -> Result<&'a [u8], SSError> {
+    assert!(key.len() == KEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+    let mut padded = utils::malloc(ZEROBYTES + message.len());
+
+    for i in 0..ZEROBYTES {
+        padded[i] = 0;
+    }
+
+    for (i,b) in (ZEROBYTES..(ZEROBYTES+message.len())).zip(message.iter()) {
+        padded[i] = *b;
+    }
+
+    let mut ciphertext = utils::malloc(padded.len());
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_secretbox(ciphertext.as_mut_ptr() as *mut c_uchar,
+                               padded.as_ptr() as *const c_uchar,
+                               padded.len() as c_ulonglong,
+                               nonce.as_ptr() as *const c_uchar,
+                               key.as_ptr() as *const c_uchar);
+
+    }
+
+    utils::free(padded);
+
+    if res == 0 {
+        utils::mprotect_readonly(ciphertext);
+        Ok(ciphertext)
+    } else {
+        Err(ENCRYPT("Unable to encrypt message!"))
+    }
+}
+
+pub fn open_nacl<'a>(ciphertext: &[u8],
+                     key: &[u8],
+                     nonce: &[u8]) -> Result<&'a mut [u8], SSError> {
+    assert!(key.len() == KEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+    let mut message = utils::malloc(ciphertext.len());
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_secretbox_open(message.as_mut_ptr(),
+                                    ciphertext.as_ptr(),
+                                    ciphertext.len() as c_ulonglong,
+                                    nonce.as_ptr(),
+                                    key.as_ptr());
     }
 
     if res == 0 {
