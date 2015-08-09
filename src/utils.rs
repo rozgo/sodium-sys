@@ -1,43 +1,44 @@
+//! Various utility and memory safety functions.
+use libc::{c_char, c_int, c_uchar, c_void, size_t};
 use std::ffi::{CStr, CString};
 use std::slice;
 use std::str;
 
 extern "C" {
-    // sodium/utils.h
-    fn sodium_memzero(pnt: *mut ::libc::c_void, len: ::libc::size_t) -> ();
-    fn sodium_memcmp(b1_: *const ::libc::c_void,
-                     b2_: *const ::libc::c_void,
-                     len: ::libc::size_t)
-                     -> ::libc::c_int;
-    fn sodium_bin2hex(hex: *mut ::libc::c_char,
-                      hex_maxlen: ::libc::size_t,
-                      bin: *const ::libc::c_uchar,
-                      bin_len: ::libc::size_t)
-                      -> *mut ::libc::c_char;
-    fn sodium_hex2bin(bin: *mut ::libc::c_uchar,
-                      bin_maxlen: ::libc::size_t,
-                      hex: *const ::libc::c_char,
-                      hex_len: ::libc::size_t,
-                      ignore: *const ::libc::c_char,
-                      bin_len: *mut ::libc::size_t,
-                      hex_end: *mut *const ::libc::c_char)
-                       -> ::libc::c_int;
-    fn sodium_mlock(addr: *mut ::libc::c_void,
-                    len: ::libc::size_t)
-                    -> ::libc::c_int;
-    fn sodium_munlock(addr: *mut ::libc::c_void,
-                      len: ::libc::size_t)
-                      -> ::libc::c_int;
-    fn sodium_malloc(size: ::libc::size_t) -> *mut ::libc::c_void;
-    fn sodium_allocarray(count: ::libc::size_t,
-                         size: ::libc::size_t)
-                         -> *mut ::libc::c_void;
-    fn sodium_free(ptr: *mut ::libc::c_void) -> ();
-    fn sodium_mprotect_noaccess(ptr: *mut ::libc::c_void) -> ::libc::c_int;
-    fn sodium_mprotect_readonly(ptr: *mut ::libc::c_void) -> ::libc::c_int;
-    fn sodium_mprotect_readwrite(ptr: *mut ::libc::c_void) -> ::libc::c_int;
+    fn sodium_memzero(pnt: *mut c_void, len: size_t) -> ();
+    fn sodium_memcmp(b1_: *const c_void,
+                     b2_: *const c_void,
+                     len: size_t)
+                     -> c_int;
+    fn sodium_bin2hex(hex: *mut c_char,
+                      hex_maxlen: size_t,
+                      bin: *const c_uchar,
+                      bin_len: size_t)
+                      -> *mut c_char;
+    fn sodium_hex2bin(bin: *mut c_uchar,
+                      bin_maxlen: size_t,
+                      hex: *const c_char,
+                      hex_len: size_t,
+                      ignore: *const c_char,
+                      bin_len: *mut size_t,
+                      hex_end: *mut *const c_char)
+                       -> c_int;
+    fn sodium_mlock(addr: *mut c_void,
+                    len: size_t)
+                    -> c_int;
+    fn sodium_munlock(addr: *mut c_void,
+                      len: size_t)
+                      -> c_int;
+    fn sodium_malloc(size: size_t) -> *mut c_void;
+    fn sodium_allocarray(count: size_t,
+                         size: size_t)
+                         -> *mut c_void;
+    fn sodium_free(ptr: *mut c_void) -> ();
+    fn sodium_mprotect_noaccess(ptr: *mut c_void) -> c_int;
+    fn sodium_mprotect_readonly(ptr: *mut c_void) -> c_int;
+    fn sodium_mprotect_readwrite(ptr: *mut c_void) -> c_int;
     #[cfg(feature = "latest")]
-    fn sodium_increment(n: *mut ::libc::c_uchar, nlen: ::libc::size_t) -> ();
+    fn sodium_increment(n: *mut c_uchar, nlen: size_t) -> ();
 }
 
 /// After use, sensitive data should be overwritten, but *memset()* and
@@ -59,8 +60,8 @@ extern "C" {
 /// ```
 pub fn memzero(mem: &[u8]) {
     unsafe {
-        sodium_memzero(mem.as_ptr() as *mut ::libc::c_void,
-                       mem.len() as ::libc::size_t);
+        sodium_memzero(mem.as_ptr() as *mut c_void,
+                       mem.len() as size_t);
     }
 }
 
@@ -91,9 +92,9 @@ pub fn memzero(mem: &[u8]) {
 pub fn memcmp(m1: &[u8], m2: &[u8]) -> i32 {
     if m1.len() == m2.len() {
         unsafe {
-            sodium_memcmp(m1.as_ptr() as *const ::libc::c_void,
-                          m2.as_ptr() as *const ::libc::c_void,
-                          m1.len() as ::libc::size_t)
+            sodium_memcmp(m1.as_ptr() as *const c_void,
+                          m2.as_ptr() as *const c_void,
+                          m1.len() as size_t)
         }
     } else {
         -1
@@ -121,9 +122,9 @@ pub fn bin2hex(mem: &[u8]) -> Result<String, ::SSError> {
     let mut buf = &mut bufvec[..];
     unsafe {
         let buf_ptr = sodium_bin2hex(buf.as_mut_ptr(),
-                                     buf.len() as ::libc::size_t,
+                                     buf.len() as size_t,
                                      mem.as_ptr(),
-                                     mem.len() as ::libc::size_t);
+                                     mem.len() as size_t);
         let slice = CStr::from_ptr(buf_ptr).to_bytes();
         Ok(try!(str::from_utf8(slice)).to_string())
     }
@@ -198,14 +199,14 @@ pub fn hex2bin(hex: String,
         bufvec.push(0);
     }
     let mut buf = &mut bufvec[..];
-    let mut b: [::libc::size_t; 1] = [0];
+    let mut b: [size_t; 1] = [0];
     let hex_end: [i8; 1] = [0];
 
     unsafe {
         let res = sodium_hex2bin(buf.as_mut_ptr(),
-                                 buf.len() as ::libc::size_t,
+                                 buf.len() as size_t,
                                  chex.as_ptr(),
-                                 chex_len as ::libc::size_t,
+                                 chex_len as size_t,
                                  igstr.as_ptr(),
                                  b.as_mut_ptr(),
                                  hex_end.as_ptr() as *mut *const i8);
@@ -250,8 +251,8 @@ pub fn hex2bin(hex: String,
 /// ```
 pub fn mlock(mem: &[u8]) -> i32 {
     unsafe {
-        sodium_mlock(mem.as_ptr() as *mut ::libc::c_void,
-                     mem.len() as ::libc::size_t)
+        sodium_mlock(mem.as_ptr() as *mut c_void,
+                     mem.len() as size_t)
     }
 }
 
@@ -278,8 +279,8 @@ pub fn mlock(mem: &[u8]) -> i32 {
 /// ```
 pub fn munlock(mem: &[u8]) -> i32 {
     unsafe {
-        sodium_munlock(mem.as_ptr() as *mut ::libc::c_void,
-                       mem.len() as ::libc::size_t)
+        sodium_munlock(mem.as_ptr() as *mut c_void,
+                       mem.len() as size_t)
     }
 }
 
@@ -333,7 +334,7 @@ pub fn munlock(mem: &[u8]) -> i32 {
 /// ```
 pub fn malloc<'a>(size: usize) -> &'a mut [u8] {
     unsafe {
-        let ptr = sodium_malloc(size as ::libc::size_t) as *mut u8;
+        let ptr = sodium_malloc(size as size_t) as *mut u8;
         assert!(!ptr.is_null());
         slice::from_raw_parts_mut(ptr, size)
     }
@@ -359,8 +360,8 @@ pub fn malloc<'a>(size: usize) -> &'a mut [u8] {
 /// assert!(v[0] == 1);
 /// free(v);
 /// ```
-pub fn allocarray<'a>(count: ::libc::size_t,
-                      size: ::libc::size_t) -> &'a mut [u8] {
+pub fn allocarray<'a>(count: size_t,
+                      size: size_t) -> &'a mut [u8] {
     unsafe {
         let ptr = sodium_allocarray(count, size) as *mut u8;
         assert!(!ptr.is_null());
@@ -399,7 +400,7 @@ pub fn allocarray<'a>(count: ::libc::size_t,
 /// ```
 pub fn free(mem: &[u8]) {
     unsafe {
-        sodium_free(mem.as_ptr() as *mut ::libc::c_void);
+        sodium_free(mem.as_ptr() as *mut c_void);
     }
 }
 
@@ -433,7 +434,7 @@ pub fn free(mem: &[u8]) {
 /// ```
 pub fn mprotect_noaccess(mem: &[u8]) {
     unsafe {
-        sodium_mprotect_noaccess(mem.as_ptr() as *mut ::libc::c_void);
+        sodium_mprotect_noaccess(mem.as_ptr() as *mut c_void);
     }
 }
 
@@ -461,7 +462,7 @@ pub fn mprotect_noaccess(mem: &[u8]) {
 /// ```
 pub fn mprotect_readonly(mem: &[u8]) {
     unsafe {
-        sodium_mprotect_readonly(mem.as_ptr() as *mut ::libc::c_void);
+        sodium_mprotect_readonly(mem.as_ptr() as *mut c_void);
     }
 }
 
@@ -493,7 +494,7 @@ pub fn mprotect_readonly(mem: &[u8]) {
 /// ```
 pub fn mprotect_readwrite(mem: &[u8]) {
     unsafe {
-        sodium_mprotect_readwrite(mem.as_ptr() as *mut ::libc::c_void);
+        sodium_mprotect_readwrite(mem.as_ptr() as *mut c_void);
     }
 }
 
@@ -519,6 +520,6 @@ pub fn mprotect_readwrite(mem: &[u8]) {
 /// ```
 pub fn increment(n: &mut [u8]) {
     unsafe {
-        sodium_increment(n.as_mut_ptr(), n.len() as ::libc::size_t);
+        sodium_increment(n.as_mut_ptr(), n.len() as size_t);
     }
 }

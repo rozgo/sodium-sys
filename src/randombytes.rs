@@ -1,7 +1,10 @@
+//! Utility functions for generating random values and byte sequences.
+use libc::{c_void, size_t, uint32_t};
+
 extern "C" {
-    fn randombytes_buf(buf: *mut ::libc::c_void, size: ::libc::size_t) -> ();
-    fn randombytes_random() -> ::libc::uint32_t;
-    fn randombytes_uniform(upper_bound: ::libc::uint32_t) -> ::libc::uint32_t;
+    fn randombytes_buf(buf: *mut c_void, size: size_t) -> ();
+    fn randombytes_random() -> uint32_t;
+    fn randombytes_uniform(upper_bound: uint32_t) -> uint32_t;
 }
 
 /// The *random()* function returns an unpredictable value between 0 and
@@ -16,7 +19,7 @@ extern "C" {
 /// let r1 = randombytes::random();
 /// assert!(r0 != r1);
 /// ```
-pub fn random() -> ::libc::uint32_t {
+pub fn random() -> uint32_t {
     unsafe {
         randombytes_random()
     }
@@ -36,7 +39,7 @@ pub fn random() -> ::libc::uint32_t {
 /// let r0 = randombytes::uniform(10);
 /// assert!(r0 < 10);
 /// ```
-pub fn uniform(upper_bound: ::libc::uint32_t) -> ::libc::uint32_t {
+pub fn uniform(upper_bound: uint32_t) -> uint32_t {
     unsafe {
         randombytes_uniform(upper_bound)
     }
@@ -59,7 +62,7 @@ pub fn uniform(upper_bound: ::libc::uint32_t) -> ::libc::uint32_t {
 /// ```
 pub fn random_byte_array(buf: &mut [u8]) {
     unsafe {
-        randombytes_buf(buf.as_mut_ptr() as *mut ::libc::c_void,
-                        buf.len() as ::libc::size_t);
+        randombytes_buf(buf.as_mut_ptr() as *mut c_void,
+                        buf.len() as size_t);
     }
 }

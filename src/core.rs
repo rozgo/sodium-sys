@@ -1,5 +1,8 @@
+//! This module contains the *init()* function.
+use libc::c_int;
+
 extern "C" {
-    fn sodium_init() -> ::libc::c_int;
+    fn sodium_init() -> c_int;
 }
 
 /// *init()* initializes the library and should be called before any other

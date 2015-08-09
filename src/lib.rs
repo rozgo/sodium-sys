@@ -37,6 +37,7 @@ pub mod randombytes;
 pub mod utils;
 pub mod version;
 
+/// Crypography library modules.
 pub mod crypto {
     pub mod key;
     pub mod nonce;

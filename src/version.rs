@@ -1,12 +1,12 @@
-
+//! libsodium version information.
+use libc::{c_char, c_int};
 use std::ffi::CStr;
 use std::str;
 
 extern "C" {
-    // sodium/version.h
-    fn sodium_version_string() -> *const ::libc::c_char;
-    fn sodium_library_version_major() -> ::libc::c_int;
-    fn sodium_library_version_minor() -> ::libc::c_int;
+    fn sodium_version_string() -> *const c_char;
+    fn sodium_library_version_major() -> c_int;
+    fn sodium_library_version_minor() -> c_int;
 }
 
 pub fn version<'a>() -> Result<&'a str, ::SSError> {

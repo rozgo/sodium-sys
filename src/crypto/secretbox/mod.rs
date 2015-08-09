@@ -85,7 +85,7 @@ extern "C" {
 /// key.activate();
 ///
 /// // Create the nonce and activate for use.
-/// let mut nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
+/// let nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
 /// nonce.activate();
 ///
 /// // Generate the ciphertext and protect it as readonly.
@@ -134,7 +134,7 @@ pub fn seal<'a>(message: &[u8], key: &[u8], nonce: &[u8]) -> &'a mut [u8] {
 /// key.activate();
 ///
 /// // Create the nonce and activate for use.
-/// let mut nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
+/// let nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
 /// nonce.activate();
 ///
 /// // Generate the ciphertext and protect it as readonly.
@@ -190,7 +190,7 @@ pub fn open<'a>(ciphertext: &[u8],
 /// key.activate();
 ///
 /// // Create the nonce and activate for use.
-/// let mut nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
+/// let nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
 /// nonce.activate();
 ///
 /// // Generate the ciphertext and protect it as readonly.
@@ -244,7 +244,7 @@ pub fn seal_detached<'a>(message: &[u8],
 /// key.activate();
 ///
 /// // Create the nonce and activate for use.
-/// let mut nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
+/// let nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
 /// nonce.activate();
 ///
 /// // Generate the ciphertext and mac and protect them as readonly.
@@ -290,6 +290,35 @@ pub fn open_detached<'a>(ciphertext: &[u8],
     }
 }
 
+/// The *seal_nacl()* function encrypts and authenticates a message using a
+/// secret key and a nonce. The *seal_nacl()* function returns Result containing
+/// a byte sequence containing the ciphertext.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core,utils};
+/// use sodium_sys::crypto::{key,nonce,secretbox};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the key and activate for use.
+/// let key = key::Key::new(secretbox::KEYBYTES);
+/// key.activate();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let ciphertext = secretbox::seal_nacl(b"test",
+///                                       key.bytes(),
+///                                       nonce.bytes()).unwrap();
+///
+/// utils::mprotect_readonly(ciphertext);
+/// println!("{:?}", ciphertext);
+/// ```
 pub fn seal_nacl<'a>(message: &[u8],
                      key: &[u8],
                      nonce: &[u8]) -> Result<&'a [u8], SSError> {
@@ -328,6 +357,40 @@ pub fn seal_nacl<'a>(message: &[u8],
     }
 }
 
+/// The *open_nacl()* function verifies and decrypts a ciphertext using a secret
+/// key and a nonce. The *open_nacl()* function returns a Result containing a
+/// byte sequence representing the plaintext.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core,utils};
+/// use sodium_sys::crypto::{key,nonce,secretbox};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the key and activate for use.
+/// let key = key::Key::new(secretbox::KEYBYTES);
+/// key.activate();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(secretbox::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let ciphertext = secretbox::seal_nacl(b"test",
+///                                       key.bytes(),
+///                                       nonce.bytes()).unwrap();
+///
+/// utils::mprotect_readonly(ciphertext);
+///
+/// // Decrypt the ciphertext.
+/// let decrypted = secretbox::open_nacl(ciphertext,
+///                                      key.bytes(),
+///                                      nonce.bytes()).unwrap();
+/// assert!(&decrypted[secretbox::ZEROBYTES..] == b"test");
+/// ```
 pub fn open_nacl<'a>(ciphertext: &[u8],
                      key: &[u8],
                      nonce: &[u8]) -> Result<&'a mut [u8], SSError> {
