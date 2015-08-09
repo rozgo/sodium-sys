@@ -15,11 +15,17 @@ use utils;
 
 pub mod crypto_secretbox_xsalsa20poly1305;
 
+/// 32-bytes for xsalsa20poly1305 primitive.
 pub const KEYBYTES: usize = crypto_secretbox_xsalsa20poly1305::KEYBYTES;
+/// 24-bytes for xsalsa20poly1305 primitive.
 pub const NONCEBYTES: usize = crypto_secretbox_xsalsa20poly1305::NONCEBYTES;
+/// 16-bytes for xsalsa20poly1305 prmitive.
 pub const MACBYTES: usize = crypto_secretbox_xsalsa20poly1305::MACBYTES;
+/// xsalsa20poly1305
 pub const PRIMITIVE: &'static str = "xsalsa20poly1305";
+/// 32-bytes for xsalsa20poly1305 primitive.
 pub const ZEROBYTES: usize = crypto_secretbox_xsalsa20poly1305::ZEROBYTES;
+/// 16-bytes for xsalsa20poly1305 primitive.
 pub const BOXZEROBYTES: usize =
                         crypto_secretbox_xsalsa20poly1305::BOXZEROBYTES;
 
@@ -99,8 +105,7 @@ pub fn seal<'a>(message: &[u8], key: &[u8], nonce: &[u8]) -> &'a mut [u8] {
     let mut ciphertext = utils::malloc(MACBYTES + message.len());
 
     unsafe {
-        crypto_secretbox_easy(ciphertext.as_mut_ptr() as
-                              *mut c_uchar,
+        crypto_secretbox_easy(ciphertext.as_mut_ptr() as *mut c_uchar,
                               message.as_ptr() as *const c_uchar,
                               message.len() as c_ulonglong,
                               nonce.as_ptr() as *const c_uchar,
@@ -159,8 +164,7 @@ pub fn open<'a>(ciphertext: &[u8],
     unsafe {
         res = crypto_secretbox_open_easy(message.as_mut_ptr(),
                                          ciphertext.as_ptr(),
-                                         ciphertext.len() as
-                                         c_ulonglong,
+                                         ciphertext.len() as c_ulonglong,
                                          nonce.as_ptr(),
                                          key.as_ptr());
     }
@@ -211,8 +215,7 @@ pub fn seal_detached<'a>(message: &[u8],
     let mut mac = utils::malloc(MACBYTES);
 
     unsafe {
-        crypto_secretbox_detached(ciphertext.as_mut_ptr() as
-                                  *mut c_uchar,
+        crypto_secretbox_detached(ciphertext.as_mut_ptr() as *mut c_uchar,
                                   mac.as_mut_ptr() as *mut c_uchar,
                                   message.as_ptr() as *const c_uchar,
                                   message.len() as c_ulonglong,
@@ -276,8 +279,7 @@ pub fn open_detached<'a>(ciphertext: &[u8],
         res = crypto_secretbox_open_detached(message.as_mut_ptr(),
                                              ciphertext.as_ptr(),
                                              mac.as_ptr(),
-                                             ciphertext.len() as
-                                             c_ulonglong,
+                                             ciphertext.len() as c_ulonglong,
                                              nonce.as_ptr(),
                                              key.as_ptr());
     }
