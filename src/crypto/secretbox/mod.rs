@@ -99,8 +99,7 @@ pub fn seal<'a>(message: &[u8], key: &[u8], nonce: &[u8]) -> &'a mut [u8] {
     let mut ciphertext = utils::malloc(MACBYTES + message.len());
 
     unsafe {
-        crypto_secretbox_easy(ciphertext.as_mut_ptr() as
-                              *mut c_uchar,
+        crypto_secretbox_easy(ciphertext.as_mut_ptr() as *mut c_uchar,
                               message.as_ptr() as *const c_uchar,
                               message.len() as c_ulonglong,
                               nonce.as_ptr() as *const c_uchar,
@@ -159,8 +158,7 @@ pub fn open<'a>(ciphertext: &[u8],
     unsafe {
         res = crypto_secretbox_open_easy(message.as_mut_ptr(),
                                          ciphertext.as_ptr(),
-                                         ciphertext.len() as
-                                         c_ulonglong,
+                                         ciphertext.len() as c_ulonglong,
                                          nonce.as_ptr(),
                                          key.as_ptr());
     }
@@ -211,8 +209,7 @@ pub fn seal_detached<'a>(message: &[u8],
     let mut mac = utils::malloc(MACBYTES);
 
     unsafe {
-        crypto_secretbox_detached(ciphertext.as_mut_ptr() as
-                                  *mut c_uchar,
+        crypto_secretbox_detached(ciphertext.as_mut_ptr() as *mut c_uchar,
                                   mac.as_mut_ptr() as *mut c_uchar,
                                   message.as_ptr() as *const c_uchar,
                                   message.len() as c_ulonglong,
@@ -276,8 +273,7 @@ pub fn open_detached<'a>(ciphertext: &[u8],
         res = crypto_secretbox_open_detached(message.as_mut_ptr(),
                                              ciphertext.as_ptr(),
                                              mac.as_ptr(),
-                                             ciphertext.len() as
-                                             c_ulonglong,
+                                             ciphertext.len() as c_ulonglong,
                                              nonce.as_ptr(),
                                              key.as_ptr());
     }
