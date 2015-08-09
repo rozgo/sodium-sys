@@ -16,6 +16,7 @@ mod randombytes;
 mod utils;
 
 mod crypto {
+    mod crypto_auth;
     mod crypto_key;
     mod crypto_nonce;
     mod crypto_secretbox;
