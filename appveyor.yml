@@ -6,8 +6,8 @@ environment:
     ARCH: x86
 install:
   - git submodule update --init --recursive --merge
-  - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-nightly-${env:TARGET}.exe"
-  - rust-nightly-%TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
+  - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-1.2.0-${env:TARGET}.exe"
+  - rust-1.2.0-%TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
   - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %ARCH%
   - SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
   - rustc -V
@@ -17,4 +17,3 @@ build: false
 
 test_script:
   - cargo test --verbose
-  - cargo bench --verbose
