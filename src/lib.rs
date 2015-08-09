@@ -48,11 +48,20 @@ pub mod crypto {
 pub use self::SSError::*;
 
 #[derive(Debug)]
+/// A sodium-sys error.  This is used to wrap various other errors to unify
+/// the Result returns from the library.
 pub enum SSError {
+    /// An error returned from ```CString::new``` to indicate that a nul byte
+    /// was found in the vector provided.
     CSTR(NulError),
+    /// An error returned from functions that decrypt ciphertext.
     DECRYPT(&'static str),
+    /// An error returned from functions that encrypt messages.
     ENCRYPT(&'static str),
+    /// Errors which can occur when attempting to interpret a byte slice as a
+    /// str.
     STR(str::Utf8Error),
+    /// A possible error value from the String::from_utf8 function.
     STRING(string::FromUtf8Error),
 }
 
