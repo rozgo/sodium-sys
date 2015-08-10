@@ -32,7 +32,7 @@ const TEST_AD_IETF_CT: [u8; 20] = [235, 98, 148, 202,
                                    96, 240, 229, 187];
 
 #[bench]
-fn bench_aead_encrypt(b: &mut Bencher) {
+fn bench_aead_encrypt_no_ad(b: &mut Bencher) {
     ::test_init();
     b.iter(|| {
         let mut ciphertext = aead::aead_encrypt(TEST_MESSAGE,
@@ -40,5 +40,93 @@ fn bench_aead_encrypt(b: &mut Bencher) {
                                                 &TEST_KEY,
                                                 &TEST_NONCE).unwrap();
         utils::free(&mut ciphertext);
+    });
+}
+
+#[bench]
+fn bench_aead_encrypt(b: &mut Bencher) {
+    ::test_init();
+    b.iter(|| {
+        let mut ciphertext = aead::aead_encrypt(TEST_MESSAGE,
+                                                Some(TEST_AD),
+                                                &TEST_KEY,
+                                                &TEST_NONCE).unwrap();
+        utils::free(&mut ciphertext);
+    });
+}
+
+#[bench]
+fn bench_aead_decrypt_no_ad(b: &mut Bencher) {
+    ::test_init();
+    b.iter(|| {
+        let mut message = aead::aead_decrypt(&TEST_NO_AD_CT,
+                                             None,
+                                             &TEST_KEY,
+                                             &TEST_NONCE).unwrap();
+        utils::free(&mut message);
+    });
+}
+
+#[bench]
+fn bench_aead_decrypt(b: &mut Bencher) {
+    ::test_init();
+    b.iter(|| {
+        let mut message = aead::aead_decrypt(&TEST_AD_CT,
+                                             Some(TEST_AD),
+                                             &TEST_KEY,
+                                             &TEST_NONCE).unwrap();
+        utils::free(&mut message);
+    });
+}
+
+#[cfg(feature = "latest")]
+#[bench]
+fn bench_aead_encrypt_ietf_no_ad(b: &mut Bencher) {
+    ::test_init();
+    b.iter(|| {
+        let mut ciphertext = aead::aead_encrypt_ietf(TEST_MESSAGE,
+                                                     None,
+                                                     &TEST_KEY,
+                                                     &TEST_IETF_NONCE).unwrap();
+        utils::free(&mut ciphertext);
+    });
+}
+
+#[cfg(feature = "latest")]
+#[bench]
+fn bench_aead_encrypt_ietf(b: &mut Bencher) {
+    ::test_init();
+    b.iter(|| {
+        let mut ciphertext = aead::aead_encrypt_ietf(TEST_MESSAGE,
+                                                     Some(TEST_AD),
+                                                     &TEST_KEY,
+                                                     &TEST_IETF_NONCE).unwrap();
+        utils::free(&mut ciphertext);
+    });
+}
+
+#[cfg(feature = "latest")]
+#[bench]
+fn bench_aead_decrypt_ietf_no_ad(b: &mut Bencher) {
+    ::test_init();
+    b.iter(|| {
+        let mut message = aead::aead_decrypt_ietf(&TEST_NO_AD_IETF_CT,
+                                                  None,
+                                                  &TEST_KEY,
+                                                  &TEST_IETF_NONCE).unwrap();
+        utils::free(&mut message);
+    });
+}
+
+#[cfg(feature = "latest")]
+#[bench]
+fn bench_aead_decrypt_ietf(b: &mut Bencher) {
+    ::test_init();
+    b.iter(|| {
+        let mut message = aead::aead_decrypt_ietf(&TEST_AD_IETF_CT,
+                                                  Some(TEST_AD),
+                                                  &TEST_KEY,
+                                                  &TEST_IETF_NONCE).unwrap();
+        utils::free(&mut message);
     });
 }
