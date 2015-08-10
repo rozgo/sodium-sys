@@ -1,7 +1,13 @@
+os:
+  - linux
+  - osx
 language: rust
 rust:
   - beta
 script:
-  - cargo build --verbose
-  - cargo test --verbose
-  - cargo doc
+  - cargo build --features latest --verbose
+  - cargo test --features latest --verbose
+  - cargo build --features latest --release --verbose
+  - cargo test --features latest --release --verbose
+  - cargo bench --features latest
+  - cargo doc --features latest

@@ -6,33 +6,22 @@ use std::str;
 
 extern "C" {
     fn sodium_memzero(pnt: *mut c_void, len: size_t) -> ();
-    fn sodium_memcmp(b1_: *const c_void,
-                     b2_: *const c_void,
-                     len: size_t)
-                     -> c_int;
+    fn sodium_memcmp(b1_: *const c_void, b2_: *const c_void, len: size_t) -> c_int;
     fn sodium_bin2hex(hex: *mut c_char,
                       hex_maxlen: size_t,
                       bin: *const c_uchar,
-                      bin_len: size_t)
-                      -> *mut c_char;
+                      bin_len: size_t) -> *mut c_char;
     fn sodium_hex2bin(bin: *mut c_uchar,
                       bin_maxlen: size_t,
                       hex: *const c_char,
                       hex_len: size_t,
                       ignore: *const c_char,
                       bin_len: *mut size_t,
-                      hex_end: *mut *const c_char)
-                       -> c_int;
-    fn sodium_mlock(addr: *mut c_void,
-                    len: size_t)
-                    -> c_int;
-    fn sodium_munlock(addr: *mut c_void,
-                      len: size_t)
-                      -> c_int;
+                      hex_end: *mut *const c_char) -> c_int;
+    fn sodium_mlock(addr: *mut c_void, len: size_t) -> c_int;
+    fn sodium_munlock(addr: *mut c_void, len: size_t) -> c_int;
     fn sodium_malloc(size: size_t) -> *mut c_void;
-    fn sodium_allocarray(count: size_t,
-                         size: size_t)
-                         -> *mut c_void;
+    fn sodium_allocarray(count: size_t, size: size_t) -> *mut c_void;
     fn sodium_free(ptr: *mut c_void) -> ();
     fn sodium_mprotect_noaccess(ptr: *mut c_void) -> c_int;
     fn sodium_mprotect_readonly(ptr: *mut c_void) -> c_int;
