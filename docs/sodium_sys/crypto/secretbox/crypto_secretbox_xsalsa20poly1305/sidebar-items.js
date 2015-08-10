@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["BOXZEROBYTES","16 bytes."],["KEYBYTES","32 bytes."],["MACBYTES","ZEROBYTES - BOXZEROBYTES (16 bytes)."],["NONCEBYTES","24 bytes."],["ZEROBYTES","32 bytes."]]});

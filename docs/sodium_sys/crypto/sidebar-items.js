@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["aead","Secret Key Authenticated Encryption with Additional Data"],["auth","Secret Key Message Authentication"],["key","Memory safe secret key implementation."],["nonce","Memory safe nonce implementation."],["secretbox","Secret Key Authenticated Encryption"],["verify","Byte sequence verification."]]});
