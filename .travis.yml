@@ -9,5 +9,4 @@ script:
   - cargo test --features latest --verbose
   - cargo build --features latest --release --verbose
   - cargo test --features latest --release --verbose
-  - cargo bench --features latest
   - cargo doc --features latest
