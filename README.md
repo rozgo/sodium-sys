@@ -1,5 +1,5 @@
 # sodium-sys
-Rust bindings for libsodium
+Rust bindings for libsodium that take advantage of the extra memory safety features of libsodium.
 
 ## Status
 |  OS   |  Arch  | Channel | Status |
