@@ -39,6 +39,7 @@ pub mod version;
 
 /// Crypography library modules.
 pub mod crypto {
+    pub mod aead;
     pub mod auth;
     pub mod key;
     pub mod nonce;
