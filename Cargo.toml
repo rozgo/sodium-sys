@@ -3,6 +3,7 @@ name = "sodium-sys"
 version = "0.0.1-pre"
 authors = ["Jason Ozias <jason.g.ozias@gmail.com>"]
 description = "FFI binding to libsodium"
+homepage = "http://rustyhorde.github.io/sodium-sys"
 repository = "https://github.com/rustyhorde/sodium-sys.git"
 keywords = ["libsodium", "NaCl", "crypto", "sodium-sys"]
 links = "sodium"
