@@ -1,4 +1,5 @@
 //! xsalsa20poly1305 constants
+
 /// 32 bytes.
 pub const KEYBYTES: usize = 32;
 /// 24 bytes.

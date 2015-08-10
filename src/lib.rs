@@ -39,6 +39,8 @@ pub mod version;
 
 /// Crypography library modules.
 pub mod crypto {
+    pub mod aead;
+    pub mod auth;
     pub mod key;
     pub mod nonce;
     pub mod secretbox;
@@ -58,6 +60,8 @@ pub enum SSError {
     DECRYPT(&'static str),
     /// An error returned from functions that encrypt messages.
     ENCRYPT(&'static str),
+    /// An error returned from functions that generate MACs.
+    MAC(&'static str),
     /// Errors which can occur when attempting to interpret a byte slice as a
     /// str.
     STR(str::Utf8Error),
