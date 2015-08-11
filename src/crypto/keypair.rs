@@ -25,6 +25,30 @@ impl KeyPair {
     /// access via *mprotect_noaccess()* to ensure the data is not inadvertently
     /// (or maliciously) altered.  Note in order to use the keypair, the caller
     /// must use *activate_sk()* and *activate_pk()*.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sodium_sys::core;
+    /// use sodium_sys::crypto::{box_, keypair};
+    ///
+    /// // Initialize the sodium-sys library.
+    /// core::init();
+    ///
+    /// // Create a keypair for the box_ module.
+    /// let keypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+    ///                                     box_::PUBLICKEYBYTES).unwrap();
+    ///
+    /// // Activate the keys for use (they are created as no access).
+    /// keypair.activate_sk();
+    /// keypair.activate_pk();
+    ///
+    /// // Validate.
+    /// assert!(keypair.sk_bytes().len() == box_::SECRETKEYBYTES);
+    /// assert!(keypair.sk_bytes() != [0; box_::SECRETKEYBYTES]);
+    /// assert!(keypair.pk_bytes().len() == box_::PUBLICKEYBYTES);
+    /// assert!(keypair.pk_bytes() != [0; box_::PUBLICKEYBYTES]);
+    /// ```
     pub fn new(sk_size: usize, pk_size: usize) -> Result<KeyPair, SSError> {
         let mut sk = utils::malloc(sk_size);
         let mut pk = utils::malloc(pk_size);
@@ -56,6 +80,34 @@ impl KeyPair {
     /// ensure the data is not inadvertently (or maliciously) altered.  Note in
     /// order to use the keypair, the caller must use *activate_sk()* and
     /// *activate_pk()*.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sodium_sys::core;
+    /// use sodium_sys::crypto::{box_, keypair};
+    ///
+    /// // Initialize the sodium-sys library.
+    /// core::init();
+    ///
+    /// // Test seed key (don't use all zeros, it's a bad idea).
+    /// const TEST_SEED_KEY: [u8; box_::SEEDBYTES] = [0; box_::SEEDBYTES];
+    ///
+    /// // Create a keypair for the box_ module.
+    /// let keypair = keypair::KeyPair::seed(&TEST_SEED_KEY,
+    ///                                      box_::SECRETKEYBYTES,
+    ///                                      box_::PUBLICKEYBYTES).unwrap();
+    ///
+    /// // Activate the keys for use (they are created as no access).
+    /// keypair.activate_sk();
+    /// keypair.activate_pk();
+    ///
+    /// // Validate.
+    /// assert!(keypair.sk_bytes().len() == box_::SECRETKEYBYTES);
+    /// assert!(keypair.sk_bytes() != [0; box_::SECRETKEYBYTES]);
+    /// assert!(keypair.pk_bytes().len() == box_::PUBLICKEYBYTES);
+    /// assert!(keypair.pk_bytes() != [0; box_::PUBLICKEYBYTES]);
+    /// ```
     pub fn seed(seed: &[u8],
                 sk_size: usize,
                 pk_size: usize) -> Result<KeyPair, SSError> {
