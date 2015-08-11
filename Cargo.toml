@@ -1,12 +1,13 @@
 [package]
 name = "sodium-sys"
-version = "0.0.1-pre"
+version = "0.0.2-pre"
 authors = ["Jason Ozias <jason.g.ozias@gmail.com>"]
 description = "FFI binding to libsodium"
 documentation = "http://rustyhorde.github.io/sodium-sys/docs/sodium_sys/index.html"
 homepage = "http://rustyhorde.github.io/sodium-sys"
 repository = "https://github.com/rustyhorde/sodium-sys.git"
 keywords = ["libsodium", "NaCl", "crypto", "sodium-sys"]
+license = "MIT"
 links = "sodium"
 build = "build.rs"
 

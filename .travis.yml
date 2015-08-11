@@ -5,6 +5,10 @@ language: rust
 rust:
   - 1.0.0
   - 1.1.0
+  - 1.2.0
+matrix:
+  allow_failures:
+    - os: osx
 script:
   - cargo build --features latest --verbose
   - cargo test --features latest --verbose
