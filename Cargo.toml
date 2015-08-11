@@ -7,6 +7,7 @@ documentation = "http://rustyhorde.github.io/sodium-sys/docs/sodium_sys/index.ht
 homepage = "http://rustyhorde.github.io/sodium-sys"
 repository = "https://github.com/rustyhorde/sodium-sys.git"
 keywords = ["libsodium", "NaCl", "crypto", "sodium-sys"]
+license = "MIT"
 links = "sodium"
 build = "build.rs"
 
