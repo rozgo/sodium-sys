@@ -43,6 +43,7 @@ pub mod crypto {
     pub mod auth;
     pub mod box_;
     pub mod key;
+    pub mod keypair;
     pub mod nonce;
     pub mod secretbox;
     pub mod verify;
@@ -61,6 +62,8 @@ pub enum SSError {
     DECRYPT(&'static str),
     /// An error returned from functions that encrypt messages.
     ENCRYPT(&'static str),
+    /// An error returned from functions the generate keypairs.
+    KEYGEN(&'static str),
     /// An error returned from functions that generate MACs.
     MAC(&'static str),
     /// Errors which can occur when attempting to interpret a byte slice as a
