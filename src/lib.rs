@@ -41,6 +41,7 @@ pub mod version;
 pub mod crypto {
     pub mod aead;
     pub mod auth;
+    pub mod box_;
     pub mod key;
     pub mod nonce;
     pub mod secretbox;
