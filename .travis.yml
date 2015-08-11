@@ -4,6 +4,9 @@ os:
 language: rust
 rust:
   - beta
+matrix:
+  allow_failures:
+    - os: osx
 script:
   - cargo build --features latest --verbose
   - cargo test --features latest --verbose
