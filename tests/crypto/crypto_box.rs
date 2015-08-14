@@ -27,7 +27,6 @@ fn seal() {
     utils::memzero(nonce.bytes_mut());
 
     let ciphertext = box_::seal(TEST_MESSAGE, keypair, nonce).unwrap();
-    println!("{:?}", ciphertext);
     assert!(ciphertext == TEST_CIPHERTEXT);
     utils::free(ciphertext);
 }
