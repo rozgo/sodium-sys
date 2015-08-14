@@ -18,6 +18,7 @@ mod utils;
 mod crypto {
     mod crypto_aead;
     mod crypto_auth;
+    mod crypto_box;
     mod crypto_key;
     mod crypto_keypair;
     mod crypto_nonce;

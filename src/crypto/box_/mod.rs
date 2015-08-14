@@ -31,7 +31,10 @@
 //! This system provides mutual authentication. However, a typical use case is
 //! to secure communications between a server, whose public key is known in
 //! advance, and clients connecting anonymously.
-use libc::{c_int,c_uchar,c_ulonglong};
+use libc::{c_int, c_uchar, c_ulonglong};
+use crypto::{keypair, nonce};
+use SSError::{self, ENCRYPT};
+use utils;
 
 mod crypto_box_curve25519xsalsa20poly1305;
 
@@ -74,4 +77,33 @@ extern "C" {
                                     n: *const c_uchar,
                                     pk: *const c_uchar,
                                     sk: *const c_uchar) -> c_int;
+}
+
+pub fn seal<'a>(message: &[u8],
+                keypair: keypair::KeyPair,
+                nonce: nonce::Nonce) -> Result<&'a [u8], SSError> {
+    assert!(keypair.pk_bytes().len() == PUBLICKEYBYTES);
+    assert!(keypair.sk_bytes().len() == SECRETKEYBYTES);
+    assert!(nonce.bytes().len() == NONCEBYTES);
+
+    let mut ciphertext = utils::malloc(MACBYTES + message.len());
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_easy(ciphertext.as_mut_ptr(),
+                              message.as_ptr(),
+                              message.len() as c_ulonglong,
+                              nonce.bytes().as_ptr(),
+                              keypair.pk_bytes().as_ptr(),
+                              keypair.sk_bytes().as_ptr());
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(ciphertext);
+        Ok(ciphertext)
+    } else {
+        Err(ENCRYPT("Unable to encrypt message!"))
+    }
+
 }
