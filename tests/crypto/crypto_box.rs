@@ -1,6 +1,9 @@
 use sodium_sys::utils;
-use sodium_sys::crypto::{box_, keypair, nonce};
+use sodium_sys::crypto::box_;
 
+const TEST_SECRET_KEY: [u8; box_::SECRETKEYBYTES] = [0; box_::SECRETKEYBYTES];
+const TEST_PUBLIC_KEY: [u8; box_::PUBLICKEYBYTES] = [0; box_::PUBLICKEYBYTES];
+const TEST_NONCE: [u8; box_::NONCEBYTES] = [0; box_::NONCEBYTES];
 const TEST_MESSAGE: &'static [u8] = b"test";
 const TEST_CIPHERTEXT: [u8; 20] = [1, 242, 22, 45,
                                    228, 36, 202, 193,
@@ -12,21 +15,10 @@ const TEST_CIPHERTEXT: [u8; 20] = [1, 242, 22, 45,
 fn seal() {
     ::test_init();
 
-    // Create a keypair of all 0's.
-    let keypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-                                        box_::PUBLICKEYBYTES).unwrap();
-    utils::mprotect_readwrite(keypair.sk_bytes());
-    utils::mprotect_readwrite(keypair.pk_bytes());
-    utils::memzero(keypair.sk_bytes_mut());
-    utils::memzero(keypair.pk_bytes_mut());
-
-    // Create a nonce of all 0's.
-    let nonce = nonce::Nonce::new(box_::NONCEBYTES);
-    nonce.activate();
-
-    utils::memzero(nonce.bytes_mut());
-
-    let ciphertext = box_::seal(TEST_MESSAGE, keypair, nonce).unwrap();
+    let ciphertext = box_::seal(TEST_MESSAGE,
+                                &TEST_PUBLIC_KEY,
+                                &TEST_SECRET_KEY,
+                                &TEST_NONCE).unwrap();
     assert!(ciphertext == TEST_CIPHERTEXT);
     utils::free(ciphertext);
 }

@@ -32,7 +32,6 @@
 //! to secure communications between a server, whose public key is known in
 //! advance, and clients connecting anonymously.
 use libc::{c_int, c_uchar, c_ulonglong};
-use crypto::{keypair, nonce};
 use SSError::{self, ENCRYPT};
 use utils;
 
@@ -79,12 +78,52 @@ extern "C" {
                                     sk: *const c_uchar) -> c_int;
 }
 
+/// The *seal()* function encrypts a message with a recipient's public key, a
+/// sender's secret key and a nonce.
+///
+/// This function writes the authentication tag immediately followed by the
+/// encrypted message.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core, utils};
+/// use sodium_sys::crypto::{keypair, nonce, box_};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another keypair and activate for use.
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let ciphertext = box_::seal(b"test",
+///                             theirkeypair.pk_bytes(),
+///                             mykeypair.sk_bytes(),
+///                             nonce.bytes()).unwrap();
+/// utils::mprotect_readonly(ciphertext);
+/// println!("{:?}", ciphertext);
+/// ```
 pub fn seal<'a>(message: &[u8],
-                keypair: keypair::KeyPair,
-                nonce: nonce::Nonce) -> Result<&'a [u8], SSError> {
-    assert!(keypair.pk_bytes().len() == PUBLICKEYBYTES);
-    assert!(keypair.sk_bytes().len() == SECRETKEYBYTES);
-    assert!(nonce.bytes().len() == NONCEBYTES);
+                pk: &[u8],
+                sk: &[u8],
+                nonce: &[u8]) -> Result<&'a [u8], SSError> {
+    assert!(pk.len() == PUBLICKEYBYTES);
+    assert!(sk.len() == SECRETKEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
 
     let mut ciphertext = utils::malloc(MACBYTES + message.len());
 
@@ -94,9 +133,9 @@ pub fn seal<'a>(message: &[u8],
         res = crypto_box_easy(ciphertext.as_mut_ptr(),
                               message.as_ptr(),
                               message.len() as c_ulonglong,
-                              nonce.bytes().as_ptr(),
-                              keypair.pk_bytes().as_ptr(),
-                              keypair.sk_bytes().as_ptr());
+                              nonce.as_ptr(),
+                              pk.as_ptr(),
+                              sk.as_ptr());
     }
 
     if res == 0 {
