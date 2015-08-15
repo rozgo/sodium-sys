@@ -144,5 +144,81 @@ pub fn seal<'a>(message: &[u8],
     } else {
         Err(ENCRYPT("Unable to encrypt message!"))
     }
+}
+
+/// The *open()* function verifies and decrypts a ciphertext produced by
+/// *seal()*.
+///
+/// The nonce has to match the nonce used to encrypt and authenticate the
+/// message.
+///
+/// pk is the public key of the sender that encrypted the message. sk is the
+/// secret key of the recipient that is willing to verify and decrypt it.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core, utils};
+/// use sodium_sys::crypto::{keypair, nonce, box_};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another keypair and activate for use.
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let ciphertext = box_::seal(b"test",
+///                             theirkeypair.pk_bytes(),
+///                             mykeypair.sk_bytes(),
+///                             nonce.bytes()).unwrap();
+///
+/// // Decrypt the ciphertext.
+/// let message = box_::open(ciphertext,
+///                          mykeypair.pk_bytes(),
+///                          theirkeypair.sk_bytes(),
+///                          nonce.bytes()).unwrap();
+/// assert!(b"test" == message);
+/// ```
+pub fn open<'a>(ciphertext: &[u8],
+                pk: &[u8],
+                sk: &[u8],
+                nonce: &[u8]) -> Result<&'a [u8], SSError> {
+    assert!(pk.len() == PUBLICKEYBYTES);
+    assert!(sk.len() == SECRETKEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut message = utils::malloc(ciphertext.len() - MACBYTES);
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_open_easy(message.as_mut_ptr(),
+                                   ciphertext.as_ptr(),
+                                   ciphertext.len() as c_ulonglong,
+                                   nonce.as_ptr(),
+                                   pk.as_ptr(),
+                                   sk.as_ptr());
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(message);
+        Ok(message)
+    } else {
+        Err(ENCRYPT("Unable to decrypt ciphertext!"))
+    }
 
 }
