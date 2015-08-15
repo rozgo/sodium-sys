@@ -14,3 +14,5 @@ script:
   - cargo test --features latest --release --verbose
   - cargo bench --features latest
   - cargo doc --features latest
+notifications:
+  slack: rustyhorde:qUn6626kqV2JaMsGUFLlNvJa
