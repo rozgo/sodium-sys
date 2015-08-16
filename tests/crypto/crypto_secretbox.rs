@@ -25,7 +25,9 @@ const TEST_MAC: [u8; secretbox::MACBYTES] = [175, 153, 180, 147,
 #[test]
 fn seal() {
     ::test_init();
-    let ciphertext = secretbox::seal(TEST_MESSAGE, &TEST_KEY, &TEST_NONCE);
+    let ciphertext = secretbox::seal(TEST_MESSAGE,
+                                     &TEST_KEY,
+                                     &TEST_NONCE).unwrap();
     assert!(ciphertext == TEST_CIPHERTEXT);
     utils::free(ciphertext);
 }
@@ -33,7 +35,9 @@ fn seal() {
 #[test]
 fn open() {
     ::test_init();
-    let decrypted = secretbox::open(&TEST_CIPHERTEXT, &TEST_KEY, &TEST_NONCE).unwrap();
+    let decrypted = secretbox::open(&TEST_CIPHERTEXT,
+                                    &TEST_KEY,
+                                    &TEST_NONCE).unwrap();
     assert!(decrypted == TEST_MESSAGE);
     utils::free(decrypted);
 }
@@ -43,7 +47,7 @@ fn seal_detached() {
     ::test_init();
     let (ciphertext, mac) = secretbox::seal_detached(TEST_MESSAGE,
                                                      &TEST_KEY,
-                                                     &TEST_NONCE);
+                                                     &TEST_NONCE).unwrap();
     assert!(mac == TEST_MAC);
     assert!(ciphertext == TEST_DET_CIPHERTEXT);
     utils::free(ciphertext);

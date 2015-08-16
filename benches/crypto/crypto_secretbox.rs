@@ -29,7 +29,7 @@ fn bench_seal(b: &mut Bencher) {
     b.iter(|| {
         let mut ciphertext = secretbox::seal(TEST_MESSAGE,
                                              &TEST_KEY,
-                                             &TEST_NONCE);
+                                             &TEST_NONCE).unwrap();
         utils::free(&mut ciphertext);
     });
 }
@@ -49,9 +49,10 @@ fn bench_open(b: &mut Bencher) {
 fn bench_seal_detached(b: &mut Bencher) {
     ::test_init();
     b.iter(|| {
-        let (mut ciphertext, mut mac) = secretbox::seal_detached(TEST_MESSAGE,
-                                                                 &TEST_KEY,
-                                                                 &TEST_NONCE);
+        let (mut ciphertext, mut mac) =
+            secretbox::seal_detached(TEST_MESSAGE,
+                                     &TEST_KEY,
+                                     &TEST_NONCE).unwrap();
         utils::free(&mut ciphertext);
         utils::free(&mut mac);
     });
