@@ -59,18 +59,27 @@ pub const BOXZEROBYTES: usize =
 pub const MACBYTES: usize = crypto_box_curve25519xsalsa20poly1305::MACBYTES;
 
 extern "C" {
-    pub fn crypto_box_easy(c: *mut c_uchar, m: *const c_uchar,
-                           mlen: c_ulonglong, n: *const c_uchar,
-                           pk: *const c_uchar, sk: *const c_uchar) -> c_int;
-    pub fn crypto_box_open_easy(m: *mut c_uchar, c: *const c_uchar,
-                                clen: c_ulonglong, n: *const c_uchar,
-                                pk: *const c_uchar, sk: *const c_uchar)
-                                -> c_int;
-    pub fn crypto_box_detached(c: *mut c_uchar, mac: *mut c_uchar,
-                               m: *const c_uchar, mlen: c_ulonglong,
-                               n: *const c_uchar, pk: *const c_uchar,
+    fn crypto_box_easy(c: *mut c_uchar,
+                       m: *const c_uchar,
+                       mlen: c_ulonglong,
+                       n: *const c_uchar,
+                       pk: *const c_uchar,
+                       sk: *const c_uchar) -> c_int;
+    fn crypto_box_open_easy(m: *mut c_uchar,
+                            c: *const c_uchar,
+                            clen: c_ulonglong,
+                            n: *const c_uchar,
+                            pk: *const c_uchar,
+                            sk: *const c_uchar) -> c_int;
+    pub fn crypto_box_detached(c: *mut c_uchar,
+                               mac: *mut c_uchar,
+                               m: *const c_uchar,
+                               mlen: c_ulonglong,
+                               n: *const c_uchar,
+                               pk: *const c_uchar,
                                sk: *const c_uchar) -> c_int;
-    pub fn crypto_box_open_detached(m: *mut c_uchar, c: *const c_uchar,
+    pub fn crypto_box_open_detached(m: *mut c_uchar,
+                                    c: *const c_uchar,
                                     mac: *const c_uchar,
                                     clen: c_ulonglong,
                                     n: *const c_uchar,
@@ -221,4 +230,75 @@ pub fn open<'a>(ciphertext: &[u8],
         Err(ENCRYPT("Unable to decrypt ciphertext!"))
     }
 
+}
+
+pub type SealDetachedResult<'a> = Result<(&'a mut [u8], &'a mut [u8]), SSError>;
+/// This function encrypts a message with a recipients public key, your secret
+/// key and a nonce, and returns a tuple of byte arrays. The first element is
+/// the ciphertext, the second is the mac.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core, utils};
+/// use sodium_sys::crypto::{keypair, nonce, box_};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another keypair and activate for use.
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let (ciphertext,mac) = box_::seal_detached(b"test",
+///                                            theirkeypair.pk_bytes(),
+///                                            mykeypair.sk_bytes(),
+///                                            nonce.bytes()).unwrap();
+/// println!("{:?}", ciphertext);
+/// println!("{:?}", mac);
+/// ```
+pub fn seal_detached<'a>(message: &[u8],
+                         pk: &[u8],
+                         sk: &[u8],
+                         nonce: &[u8]) -> SealDetachedResult<'a> {
+    assert!(pk.len() == PUBLICKEYBYTES);
+    assert!(sk.len() == SECRETKEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut ciphertext = utils::malloc(message.len());
+    let mut mac = utils::malloc(MACBYTES);
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_detached(ciphertext.as_mut_ptr(),
+                                  mac.as_mut_ptr(),
+                                  message.as_ptr(),
+                                  message.len() as c_ulonglong,
+                                  nonce.as_ptr(),
+                                  pk.as_ptr(),
+                                  sk.as_ptr());
+
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(ciphertext);
+        utils::mprotect_readonly(mac);
+        Ok((ciphertext, mac))
+    } else {
+        Err(ENCRYPT("Unable to encrypt message"))
+    }
 }
