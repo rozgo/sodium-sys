@@ -31,7 +31,9 @@
 //! This system provides mutual authentication. However, a typical use case is
 //! to secure communications between a server, whose public key is known in
 //! advance, and clients connecting anonymously.
-use libc::{c_int,c_uchar,c_ulonglong};
+use libc::{c_int, c_uchar, c_ulonglong};
+use SSError::{self, ENCRYPT};
+use utils;
 
 mod crypto_box_curve25519xsalsa20poly1305;
 
@@ -57,21 +59,246 @@ pub const BOXZEROBYTES: usize =
 pub const MACBYTES: usize = crypto_box_curve25519xsalsa20poly1305::MACBYTES;
 
 extern "C" {
-    pub fn crypto_box_easy(c: *mut c_uchar, m: *const c_uchar,
-                           mlen: c_ulonglong, n: *const c_uchar,
-                           pk: *const c_uchar, sk: *const c_uchar) -> c_int;
-    pub fn crypto_box_open_easy(m: *mut c_uchar, c: *const c_uchar,
-                                clen: c_ulonglong, n: *const c_uchar,
-                                pk: *const c_uchar, sk: *const c_uchar)
-                                -> c_int;
-    pub fn crypto_box_detached(c: *mut c_uchar, mac: *mut c_uchar,
-                               m: *const c_uchar, mlen: c_ulonglong,
-                               n: *const c_uchar, pk: *const c_uchar,
+    fn crypto_box_easy(c: *mut c_uchar,
+                       m: *const c_uchar,
+                       mlen: c_ulonglong,
+                       n: *const c_uchar,
+                       pk: *const c_uchar,
+                       sk: *const c_uchar) -> c_int;
+    fn crypto_box_open_easy(m: *mut c_uchar,
+                            c: *const c_uchar,
+                            clen: c_ulonglong,
+                            n: *const c_uchar,
+                            pk: *const c_uchar,
+                            sk: *const c_uchar) -> c_int;
+    pub fn crypto_box_detached(c: *mut c_uchar,
+                               mac: *mut c_uchar,
+                               m: *const c_uchar,
+                               mlen: c_ulonglong,
+                               n: *const c_uchar,
+                               pk: *const c_uchar,
                                sk: *const c_uchar) -> c_int;
-    pub fn crypto_box_open_detached(m: *mut c_uchar, c: *const c_uchar,
+    pub fn crypto_box_open_detached(m: *mut c_uchar,
+                                    c: *const c_uchar,
                                     mac: *const c_uchar,
                                     clen: c_ulonglong,
                                     n: *const c_uchar,
                                     pk: *const c_uchar,
                                     sk: *const c_uchar) -> c_int;
+}
+
+/// The *seal()* function encrypts a message with a recipient's public key, a
+/// sender's secret key and a nonce.
+///
+/// This function writes the authentication tag immediately followed by the
+/// encrypted message.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core, utils};
+/// use sodium_sys::crypto::{keypair, nonce, box_};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another keypair and activate for use.
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let ciphertext = box_::seal(b"test",
+///                             theirkeypair.pk_bytes(),
+///                             mykeypair.sk_bytes(),
+///                             nonce.bytes()).unwrap();
+/// utils::mprotect_readonly(ciphertext);
+/// println!("{:?}", ciphertext);
+/// ```
+pub fn seal<'a>(message: &[u8],
+                pk: &[u8],
+                sk: &[u8],
+                nonce: &[u8]) -> Result<&'a [u8], SSError> {
+    assert!(pk.len() == PUBLICKEYBYTES);
+    assert!(sk.len() == SECRETKEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut ciphertext = utils::malloc(MACBYTES + message.len());
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_easy(ciphertext.as_mut_ptr(),
+                              message.as_ptr(),
+                              message.len() as c_ulonglong,
+                              nonce.as_ptr(),
+                              pk.as_ptr(),
+                              sk.as_ptr());
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(ciphertext);
+        Ok(ciphertext)
+    } else {
+        Err(ENCRYPT("Unable to encrypt message!"))
+    }
+}
+
+/// The *open()* function verifies and decrypts a ciphertext produced by
+/// *seal()*.
+///
+/// The nonce has to match the nonce used to encrypt and authenticate the
+/// message.
+///
+/// pk is the public key of the sender that encrypted the message. sk is the
+/// secret key of the recipient that is willing to verify and decrypt it.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core, utils};
+/// use sodium_sys::crypto::{keypair, nonce, box_};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another keypair and activate for use.
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let ciphertext = box_::seal(b"test",
+///                             theirkeypair.pk_bytes(),
+///                             mykeypair.sk_bytes(),
+///                             nonce.bytes()).unwrap();
+///
+/// // Decrypt the ciphertext.
+/// let message = box_::open(ciphertext,
+///                          mykeypair.pk_bytes(),
+///                          theirkeypair.sk_bytes(),
+///                          nonce.bytes()).unwrap();
+/// assert!(b"test" == message);
+/// ```
+pub fn open<'a>(ciphertext: &[u8],
+                pk: &[u8],
+                sk: &[u8],
+                nonce: &[u8]) -> Result<&'a [u8], SSError> {
+    assert!(pk.len() == PUBLICKEYBYTES);
+    assert!(sk.len() == SECRETKEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut message = utils::malloc(ciphertext.len() - MACBYTES);
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_open_easy(message.as_mut_ptr(),
+                                   ciphertext.as_ptr(),
+                                   ciphertext.len() as c_ulonglong,
+                                   nonce.as_ptr(),
+                                   pk.as_ptr(),
+                                   sk.as_ptr());
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(message);
+        Ok(message)
+    } else {
+        Err(ENCRYPT("Unable to decrypt ciphertext!"))
+    }
+
+}
+
+pub type SealDetachedResult<'a> = Result<(&'a mut [u8], &'a mut [u8]), SSError>;
+/// This function encrypts a message with a recipients public key, your secret
+/// key and a nonce, and returns a tuple of byte arrays. The first element is
+/// the ciphertext, the second is the mac.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core, utils};
+/// use sodium_sys::crypto::{keypair, nonce, box_};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another keypair and activate for use.
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let (ciphertext,mac) = box_::seal_detached(b"test",
+///                                            theirkeypair.pk_bytes(),
+///                                            mykeypair.sk_bytes(),
+///                                            nonce.bytes()).unwrap();
+/// println!("{:?}", ciphertext);
+/// println!("{:?}", mac);
+/// ```
+pub fn seal_detached<'a>(message: &[u8],
+                         pk: &[u8],
+                         sk: &[u8],
+                         nonce: &[u8]) -> SealDetachedResult<'a> {
+    assert!(pk.len() == PUBLICKEYBYTES);
+    assert!(sk.len() == SECRETKEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut ciphertext = utils::malloc(message.len());
+    let mut mac = utils::malloc(MACBYTES);
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_detached(ciphertext.as_mut_ptr(),
+                                  mac.as_mut_ptr(),
+                                  message.as_ptr(),
+                                  message.len() as c_ulonglong,
+                                  nonce.as_ptr(),
+                                  pk.as_ptr(),
+                                  sk.as_ptr());
+
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(ciphertext);
+        utils::mprotect_readonly(mac);
+        Ok((ciphertext, mac))
+    } else {
+        Err(ENCRYPT("Unable to encrypt message"))
+    }
 }
