@@ -32,7 +32,7 @@
 //! to secure communications between a server, whose public key is known in
 //! advance, and clients connecting anonymously.
 use libc::{c_int, c_uchar, c_ulonglong};
-use SSError::{self, ENCRYPT};
+use SSError::{self, DECRYPT, ENCRYPT};
 use utils;
 
 mod crypto_box_curve25519xsalsa20poly1305;
@@ -227,7 +227,7 @@ pub fn open<'a>(ciphertext: &[u8],
         utils::mprotect_readonly(message);
         Ok(message)
     } else {
-        Err(ENCRYPT("Unable to decrypt ciphertext!"))
+        Err(DECRYPT("Unable to decrypt ciphertext!"))
     }
 
 }
@@ -300,5 +300,80 @@ pub fn seal_detached<'a>(message: &[u8],
         Ok((ciphertext, mac))
     } else {
         Err(ENCRYPT("Unable to encrypt message"))
+    }
+}
+
+/// This function verifies and decrypts an encrypted message after verifying
+/// the given mac, and returns the decrypted message result.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core, utils};
+/// use sodium_sys::crypto::{box_, keypair, nonce};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another their keypair and activate for use (normally this would be
+/// // supplied).
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let (ciphertext,mac) = box_::seal_detached(b"test",
+///                                            theirkeypair.pk_bytes(),
+///                                            mykeypair.sk_bytes(),
+///                                            nonce.bytes()).unwrap();
+///
+/// // Decrypt the ciphertext.
+/// let decrypted = box_::open_detached(ciphertext,
+///                                     mac,
+///                                     mykeypair.pk_bytes(),
+///                                     theirkeypair.sk_bytes(),
+///                                     nonce.bytes()).unwrap();
+/// assert!(decrypted == b"test");
+/// ```
+pub fn open_detached<'a>(ciphertext: &[u8],
+                         mac: &[u8],
+                         pk: &[u8],
+                         sk: &[u8],
+                         nonce: &[u8]) -> Result<&'a mut [u8], SSError> {
+    assert!(mac.len() == MACBYTES);
+    assert!(pk.len() == PUBLICKEYBYTES);
+    assert!(sk.len() == SECRETKEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut message = utils::malloc(ciphertext.len());
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_open_detached(message.as_mut_ptr(),
+                                       ciphertext.as_ptr(),
+                                       mac.as_ptr(),
+                                       ciphertext.len() as c_ulonglong,
+                                       nonce.as_ptr(),
+                                       pk.as_ptr(),
+                                       sk.as_ptr());
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(message);
+        Ok(message)
+    } else {
+        Err(DECRYPT("Unable to decrypt ciphertext"))
     }
 }
