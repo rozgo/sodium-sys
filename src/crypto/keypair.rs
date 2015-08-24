@@ -3,6 +3,8 @@ use libc::{c_int, c_uchar};
 use SSError::{self, KEYGEN};
 use utils;
 
+pub const BEFORENMBYTES: usize = 32;
+
 /// The key structure contains information necessary to create slices from raw
 /// parts.
 pub struct KeyPair {
@@ -18,6 +20,9 @@ extern "C" {
                                seed: *const c_uchar) -> c_int;
     fn crypto_box_keypair(pk: *mut c_uchar, sk: *mut c_uchar) -> c_int;
     fn crypto_scalarmult_base(q: *mut c_uchar, n: *const c_uchar) -> c_int;
+    fn crypto_box_beforenm(k: *mut c_uchar,
+                           pk: *const c_uchar,
+                           sk: *const c_uchar) -> c_int;
 }
 
 impl KeyPair {
@@ -226,6 +231,32 @@ impl KeyPair {
     /// key isn't currently being used, but may be at a later time.
     pub fn deactivate_pk(&self) {
         utils::mprotect_noaccess(self.pk_bytes());
+    }
+
+    /// Applications that send several messages to the same receiver or receive
+    /// several messages from the same sender can gain speed by calculating the
+    /// shared key only once, and reusing it in subsequent operations.
+    ///
+    /// The *shared_secret()* function computes a shared secret key given a
+    /// public key and returns the shared secret key result.
+    pub fn shared_secret<'a>(&self,
+                             pk: &[u8]) -> Result<&'a mut [u8], SSError> {
+        let mut ssk = utils::malloc(BEFORENMBYTES);
+
+        let res: i32;
+
+        unsafe {
+            res = crypto_box_beforenm(ssk.as_mut_ptr(),
+                                      pk.as_ptr(),
+                                      self.s_key_ptr);
+        }
+
+        if res == 0 {
+            utils::mprotect_readonly(ssk);
+            Ok(ssk)
+        } else {
+            Err(KEYGEN("Unable to generate shared secret key!"))
+        }
     }
 }
 

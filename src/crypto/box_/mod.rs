@@ -71,20 +71,20 @@ extern "C" {
                             n: *const c_uchar,
                             pk: *const c_uchar,
                             sk: *const c_uchar) -> c_int;
-    pub fn crypto_box_detached(c: *mut c_uchar,
-                               mac: *mut c_uchar,
-                               m: *const c_uchar,
-                               mlen: c_ulonglong,
-                               n: *const c_uchar,
-                               pk: *const c_uchar,
-                               sk: *const c_uchar) -> c_int;
-    pub fn crypto_box_open_detached(m: *mut c_uchar,
-                                    c: *const c_uchar,
-                                    mac: *const c_uchar,
-                                    clen: c_ulonglong,
-                                    n: *const c_uchar,
-                                    pk: *const c_uchar,
-                                    sk: *const c_uchar) -> c_int;
+    fn crypto_box_detached(c: *mut c_uchar,
+                           mac: *mut c_uchar,
+                           m: *const c_uchar,
+                           mlen: c_ulonglong,
+                           n: *const c_uchar,
+                           pk: *const c_uchar,
+                           sk: *const c_uchar) -> c_int;
+    fn crypto_box_open_detached(m: *mut c_uchar,
+                                c: *const c_uchar,
+                                mac: *const c_uchar,
+                                clen: c_ulonglong,
+                                n: *const c_uchar,
+                                pk: *const c_uchar,
+                                sk: *const c_uchar) -> c_int;
 }
 
 /// The *seal()* function encrypts a message with a recipient's public key, a

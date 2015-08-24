@@ -1,11 +1,21 @@
 use sodium_sys::crypto::{keypair, box_};
 
 const TEST_SEED: [u8; box_::SEEDBYTES] = [0; box_::SEEDBYTES];
+const TEST_OTHER_PK: [u8; box_::PUBLICKEYBYTES] = [0; box_::PUBLICKEYBYTES];
+const TEST_SSK: [u8; keypair::BEFORENMBYTES] = [53, 31, 134, 250,
+                                                163, 185, 136, 70,
+                                                138, 133, 1, 34,
+                                                182, 91, 10, 206,
+                                                206, 156, 72, 38,
+                                                128, 106, 238, 230,
+                                                61, 233, 192, 218,
+                                                43, 215, 249, 30];
 
 #[test]
 fn keypair() {
     ::test_init();
-    let keypair = keypair::KeyPair::new(box_::SECRETKEYBYTES, box_::PUBLICKEYBYTES).unwrap();
+    let keypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+                                        box_::PUBLICKEYBYTES).unwrap();
     keypair.activate_sk();
     keypair.activate_pk();
 
@@ -33,7 +43,8 @@ fn keypair_seed() {
 #[test]
 fn keypair_derivepk() {
     ::test_init();
-    let initialkp = keypair::KeyPair::new(box_::SECRETKEYBYTES, box_::PUBLICKEYBYTES).unwrap();
+    let initialkp = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+                                          box_::PUBLICKEYBYTES).unwrap();
 
     initialkp.activate_sk();
     initialkp.activate_pk();
@@ -50,4 +61,18 @@ fn keypair_derivepk() {
     assert!(nkp.pk_bytes().len() == box_::PUBLICKEYBYTES);
     assert!(nkp.pk_bytes() != [0; box_::PUBLICKEYBYTES]);
     assert!(initialkp.pk_bytes() == nkp.pk_bytes());
+}
+
+#[test]
+fn keypair_shared_secret() {
+    ::test_init();
+    let keypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+                                        box_::PUBLICKEYBYTES).unwrap();
+
+    keypair.activate_pk();
+    keypair.activate_sk();
+
+    let ssk = keypair.shared_secret(&TEST_OTHER_PK).unwrap();
+
+    assert!(ssk == TEST_SSK);
 }
