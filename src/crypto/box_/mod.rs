@@ -85,18 +85,27 @@ extern "C" {
                                 n: *const c_uchar,
                                 pk: *const c_uchar,
                                 sk: *const c_uchar) -> c_int;
-    pub fn crypto_box_easy_afternm(c: *mut c_uchar, m: *const c_uchar,
-                                   mlen: c_ulonglong, n: *const c_uchar,
+    pub fn crypto_box_easy_afternm(c: *mut c_uchar,
+                                   m: *const c_uchar,
+                                   mlen: c_ulonglong,
+                                   n: *const c_uchar,
                                    k: *const c_uchar) -> c_int;
-    pub fn crypto_box_open_easy_afternm(m: *mut c_uchar, c: *const c_uchar,
-                                        clen: c_ulonglong, n: *const c_uchar,
+    pub fn crypto_box_open_easy_afternm(m: *mut c_uchar,
+                                        c: *const c_uchar,
+                                        clen: c_ulonglong,
+                                        n: *const c_uchar,
                                         k: *const c_uchar) -> c_int;
-    pub fn crypto_box_detached_afternm(c: *mut c_uchar, mac: *mut c_uchar,
-                                       m: *const c_uchar, mlen: c_ulonglong,
-                                       n: *const c_uchar, k: c_uchar) -> c_int;
-    pub fn crypto_box_open_detached_afternm(m: *mut c_uchar, c: *const c_uchar,
+    pub fn crypto_box_detached_afternm(c: *mut c_uchar,
+                                       mac: *mut c_uchar,
+                                       m: *const c_uchar,
+                                       mlen: c_ulonglong,
+                                       n: *const c_uchar,
+                                       k: *const c_uchar) -> c_int;
+    pub fn crypto_box_open_detached_afternm(m: *mut c_uchar,
+                                            c: *const c_uchar,
                                             mac: *const c_uchar,
-                                            clen: c_ulonglong, n: *const c_uchar,
+                                            clen: c_ulonglong,
+                                            n: *const c_uchar,
                                             k: *const c_uchar) -> c_int;
 }
 
@@ -527,5 +536,148 @@ pub fn open_with_ssk<'a>(ciphertext: &[u8],
         Ok(message)
     } else {
         Err(DECRYPT("Unable to decrypt ciphertext!"))
+    }
+}
+
+/// This function encrypts a message with a shared secret key, and a nonce, and
+/// returns a tuple of byte arrays. The first element is the ciphertext, the
+/// second is the mac.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core, utils};
+/// use sodium_sys::crypto::{keypair, nonce, box_};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another keypair and activate for use.
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the shared secret key.
+/// let ssk = mykeypair.shared_secret(theirkeypair.pk_bytes()).unwrap();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let (ciphertext,mac) = box_::seal_detached_with_ssk(b"test",
+///                                                     ssk,
+///                                                     nonce.bytes()).unwrap();
+/// println!("{:?}", ciphertext);
+/// println!("{:?}", mac);
+/// ```
+pub fn seal_detached_with_ssk<'a>(message: &[u8],
+                                  ssk: &[u8],
+                                  nonce: &[u8]) -> SealDetachedResult<'a> {
+    assert!(ssk.len() == BEFORENMBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut ciphertext = utils::malloc(message.len());
+    let mut mac = utils::malloc(MACBYTES);
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_detached_afternm(ciphertext.as_mut_ptr(),
+                                          mac.as_mut_ptr(),
+                                          message.as_ptr(),
+                                          message.len() as c_ulonglong,
+                                          nonce.as_ptr(),
+                                          ssk.as_ptr());
+
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(ciphertext);
+        utils::mprotect_readonly(mac);
+        Ok((ciphertext, mac))
+    } else {
+        Err(ENCRYPT("Unable to encrypt message"))
+    }
+}
+
+/// This function verifies and decrypts an encrypted message after verifying
+/// the given mac, and returns the decrypted message result.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::{core, utils};
+/// use sodium_sys::crypto::{box_, keypair, nonce};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another their keypair and activate for use (normally this would be
+/// // supplied).
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+///
+/// // Generate the shared secret key.
+/// let ssk = mykeypair.shared_secret(theirkeypair.pk_bytes()).unwrap();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let (ciphertext,mac) = box_::seal_detached_with_ssk(b"test",
+///                                                     ssk,
+///                                                     nonce.bytes()).unwrap();
+///
+/// // Decrypt the ciphertext.
+/// let decrypted = box_::open_detached_with_ssk(ciphertext,
+///                                              mac,
+///                                              ssk,
+///                                              nonce.bytes()).unwrap();
+/// assert!(decrypted == b"test");
+/// ```
+pub fn open_detached_with_ssk<'a>(ciphertext: &[u8],
+                                  mac: &[u8],
+                                  ssk: &[u8],
+                                  nonce: &[u8]) -> Result<&'a mut [u8], SSError> {
+    assert!(mac.len() == MACBYTES);
+    assert!(ssk.len() == BEFORENMBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut message = utils::malloc(ciphertext.len());
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_open_detached_afternm(message.as_mut_ptr(),
+                                               ciphertext.as_ptr(),
+                                               mac.as_ptr(),
+                                               ciphertext.len() as c_ulonglong,
+                                               nonce.as_ptr(),
+                                               ssk.as_ptr());
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(message);
+        Ok(message)
+    } else {
+        Err(DECRYPT("Unable to decrypt ciphertext"))
     }
 }
