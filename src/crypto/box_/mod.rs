@@ -85,28 +85,50 @@ extern "C" {
                                 n: *const c_uchar,
                                 pk: *const c_uchar,
                                 sk: *const c_uchar) -> c_int;
-    pub fn crypto_box_easy_afternm(c: *mut c_uchar,
+    fn crypto_box_easy_afternm(c: *mut c_uchar,
+                               m: *const c_uchar,
+                               mlen: c_ulonglong,
+                               n: *const c_uchar,
+                               k: *const c_uchar) -> c_int;
+    fn crypto_box_open_easy_afternm(m: *mut c_uchar,
+                                    c: *const c_uchar,
+                                    clen: c_ulonglong,
+                                    n: *const c_uchar,
+                                    k: *const c_uchar) -> c_int;
+    fn crypto_box_detached_afternm(c: *mut c_uchar,
+                                   mac: *mut c_uchar,
                                    m: *const c_uchar,
                                    mlen: c_ulonglong,
                                    n: *const c_uchar,
                                    k: *const c_uchar) -> c_int;
-    pub fn crypto_box_open_easy_afternm(m: *mut c_uchar,
+    fn crypto_box_open_detached_afternm(m: *mut c_uchar,
                                         c: *const c_uchar,
+                                        mac: *const c_uchar,
                                         clen: c_ulonglong,
                                         n: *const c_uchar,
                                         k: *const c_uchar) -> c_int;
-    pub fn crypto_box_detached_afternm(c: *mut c_uchar,
-                                       mac: *mut c_uchar,
-                                       m: *const c_uchar,
-                                       mlen: c_ulonglong,
-                                       n: *const c_uchar,
-                                       k: *const c_uchar) -> c_int;
-    pub fn crypto_box_open_detached_afternm(m: *mut c_uchar,
-                                            c: *const c_uchar,
-                                            mac: *const c_uchar,
-                                            clen: c_ulonglong,
-                                            n: *const c_uchar,
-                                            k: *const c_uchar) -> c_int;
+    fn crypto_box(c: *mut c_uchar,
+                  m: *const c_uchar,
+                  mlen: c_ulonglong,
+                  n: *const c_uchar,
+                  pk: *const c_uchar,
+                  sk: *const c_uchar) -> c_int;
+    fn crypto_box_open(m: *mut c_uchar,
+                       c: *const c_uchar,
+                       clen: c_ulonglong,
+                       n: *const c_uchar,
+                       pk: *const c_uchar,
+                       sk: *const c_uchar) -> c_int;
+    fn crypto_box_afternm(c: *mut c_uchar,
+                          m: *const c_uchar,
+                          mlen: c_ulonglong,
+                          n: *const c_uchar,
+                          k: *const c_uchar) -> c_int;
+    fn crypto_box_open_afternm(m: *mut c_uchar,
+                               c: *const c_uchar,
+                               clen: c_ulonglong,
+                               n: *const c_uchar,
+                               k: *const c_uchar) -> c_int;
 }
 
 /// The *seal()* function encrypts a message with a recipient's public key, a
@@ -118,7 +140,7 @@ extern "C" {
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::{core, utils};
+/// use sodium_sys::core;
 /// use sodium_sys::crypto::{keypair, nonce, box_};
 ///
 /// // Initialize sodium_sys
@@ -145,7 +167,6 @@ extern "C" {
 ///                             theirkeypair.pk_bytes(),
 ///                             mykeypair.sk_bytes(),
 ///                             nonce.bytes()).unwrap();
-/// utils::mprotect_readonly(ciphertext);
 /// println!("{:?}", ciphertext);
 /// ```
 pub fn seal<'a>(message: &[u8],
@@ -437,7 +458,6 @@ pub fn open_detached<'a>(ciphertext: &[u8],
 /// let ciphertext = box_::seal_with_ssk(b"test",
 ///                                      ssk,
 ///                                      nonce.bytes()).unwrap();
-/// utils::mprotect_readonly(ciphertext);
 /// println!("{:?}", ciphertext);
 /// ```
 pub fn seal_with_ssk<'a>(message: &[u8],
@@ -679,5 +699,304 @@ pub fn open_detached_with_ssk<'a>(ciphertext: &[u8],
         Ok(message)
     } else {
         Err(DECRYPT("Unable to decrypt ciphertext"))
+    }
+}
+
+/// The *seal_nacl()* function encrypts a message with a recipient's public key,
+/// a sender's secret key and a nonce.
+///
+/// This function outputs the ciphertext.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core;
+/// use sodium_sys::crypto::{keypair, nonce, box_};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another keypair and activate for use.
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let ciphertext = box_::seal_nacl(b"test",
+///                                  theirkeypair.pk_bytes(),
+///                                  mykeypair.sk_bytes(),
+///                                  nonce.bytes()).unwrap();
+/// println!("{:?}", ciphertext);
+/// ```
+pub fn seal_nacl<'a>(message: &[u8],
+                     pk: &[u8],
+                     sk: &[u8],
+                     nonce: &[u8]) -> Result<&'a [u8], SSError> {
+    assert!(pk.len() == PUBLICKEYBYTES);
+    assert!(sk.len() == SECRETKEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut padded = utils::malloc(ZEROBYTES + message.len());
+
+    for i in 0..ZEROBYTES {
+        padded[i] = 0;
+    }
+
+    for (i,b) in (ZEROBYTES..(ZEROBYTES+message.len())).zip(message.iter()) {
+        padded[i] = *b;
+    }
+
+    let mut ciphertext = utils::malloc(padded.len());
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box(ciphertext.as_mut_ptr(),
+                         padded.as_ptr(),
+                         padded.len() as c_ulonglong,
+                         nonce.as_ptr(),
+                         pk.as_ptr(),
+                         sk.as_ptr());
+    }
+
+    utils::free(padded);
+
+    if res == 0 {
+        utils::mprotect_readonly(ciphertext);
+        Ok(ciphertext)
+    } else {
+        Err(ENCRYPT("Unable to encrypt message!"))
+    }
+}
+
+/// The *open_nacl()* function decrypts a ciphertext produced by *seal_nacl()*.
+///
+/// The nonce has to match the nonce used to encrypt the message.
+///
+/// pk is the public key of the sender that encrypted the message. sk is the
+/// secret key of the recipient that is willing to verify and decrypt it.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core;
+/// use sodium_sys::crypto::{keypair, nonce, box_};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another keypair and activate for use.
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let ciphertext = box_::seal_nacl(b"test",
+///                                  theirkeypair.pk_bytes(),
+///                                  mykeypair.sk_bytes(),
+///                                  nonce.bytes()).unwrap();
+///
+/// // Decrypt the ciphertext.
+/// let message = box_::open_nacl(ciphertext,
+///                               mykeypair.pk_bytes(),
+///                               theirkeypair.sk_bytes(),
+///                               nonce.bytes()).unwrap();
+/// assert!(&message[box_::ZEROBYTES..] == b"test");
+/// ```
+pub fn open_nacl<'a>(ciphertext: &[u8],
+                     pk: &[u8],
+                     sk: &[u8],
+                     nonce: &[u8]) -> Result<&'a [u8], SSError> {
+    assert!(pk.len() == PUBLICKEYBYTES);
+    assert!(sk.len() == SECRETKEYBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut message = utils::malloc(ciphertext.len());
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_open(message.as_mut_ptr(),
+                              ciphertext.as_ptr(),
+                              ciphertext.len() as c_ulonglong,
+                              nonce.as_ptr(),
+                              pk.as_ptr(),
+                              sk.as_ptr());
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(message);
+        Ok(message)
+    } else {
+        Err(DECRYPT("Unable to decrypt ciphertext!"))
+    }
+}
+
+/// The *seal_nacl_with_ssk()* function encrypts a message with a shared secret
+/// key and a nonce.
+///
+/// This function outputs the ciphertext.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core;
+/// use sodium_sys::crypto::{keypair, nonce, box_};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another keypair and activate for use.
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the shared secret key.
+/// let ssk = mykeypair.shared_secret(theirkeypair.pk_bytes()).unwrap();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let ciphertext = box_::seal_nacl_with_ssk(b"test",
+///                                           ssk,
+///                                           nonce.bytes()).unwrap();
+/// println!("{:?}", ciphertext);
+/// ```
+pub fn seal_nacl_with_ssk<'a>(message: &[u8],
+                              ssk: &[u8],
+                              nonce: &[u8]) -> Result<&'a [u8], SSError> {
+    assert!(ssk.len() == BEFORENMBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut padded = utils::malloc(ZEROBYTES + message.len());
+
+    for i in 0..ZEROBYTES {
+        padded[i] = 0;
+    }
+
+    for (i,b) in (ZEROBYTES..(ZEROBYTES+message.len())).zip(message.iter()) {
+        padded[i] = *b;
+    }
+
+    let mut ciphertext = utils::malloc(padded.len());
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_afternm(ciphertext.as_mut_ptr(),
+                                 padded.as_ptr(),
+                                 padded.len() as c_ulonglong,
+                                 nonce.as_ptr(),
+                                 ssk.as_ptr());
+    }
+
+    utils::free(padded);
+
+    if res == 0 {
+        utils::mprotect_readonly(ciphertext);
+        Ok(ciphertext)
+    } else {
+        Err(ENCRYPT("Unable to encrypt message!"))
+    }
+}
+
+/// The *open_nacl_with_ssk()* function decrypts a ciphertext produced by
+/// *seal_nacl_with_ssk()*.
+///
+/// The nonce has to match the nonce used to encrypt the message.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core;
+/// use sodium_sys::crypto::{keypair, nonce, box_};
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                       box_::PUBLICKEYBYTES).unwrap();
+/// mykeypair.activate_sk();
+/// mykeypair.activate_pk();
+///
+/// // Create another keypair and activate for use.
+/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
+///                                          box_::PUBLICKEYBYTES).unwrap();
+/// theirkeypair.activate_sk();
+/// theirkeypair.activate_pk();
+///
+/// // Create the nonce and activate for use.
+/// let nonce = nonce::Nonce::new(box_::NONCEBYTES);
+/// nonce.activate();
+///
+/// // Generate the shared secret key.
+/// let ssk = mykeypair.shared_secret(theirkeypair.pk_bytes()).unwrap();
+///
+/// // Generate the ciphertext and protect it as readonly.
+/// let ciphertext = box_::seal_nacl_with_ssk(b"test",
+///                                           ssk,
+///                                           nonce.bytes()).unwrap();
+///
+/// // Decrypt the ciphertext.
+/// let message = box_::open_nacl_with_ssk(ciphertext,
+///                                        ssk,
+///                                        nonce.bytes()).unwrap();
+/// assert!(&message[box_::ZEROBYTES..] == b"test");
+/// ```
+pub fn open_nacl_with_ssk<'a>(ciphertext: &[u8],
+                              ssk: &[u8],
+                              nonce: &[u8]) -> Result<&'a [u8], SSError> {
+    assert!(ssk.len() == BEFORENMBYTES);
+    assert!(nonce.len() == NONCEBYTES);
+
+    let mut message = utils::malloc(ciphertext.len());
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_box_open_afternm(message.as_mut_ptr(),
+                                      ciphertext.as_ptr(),
+                                      ciphertext.len() as c_ulonglong,
+                                      nonce.as_ptr(),
+                                      ssk.as_ptr());
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(message);
+        Ok(message)
+    } else {
+        Err(DECRYPT("Unable to decrypt ciphertext!"))
     }
 }

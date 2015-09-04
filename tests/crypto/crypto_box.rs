@@ -30,6 +30,24 @@ const TEST_SSK_CIPHERTEXT: [u8; 20] = [175, 153, 180, 147,
                                        64, 251, 167, 179,
                                        178, 91, 200, 139];
 const TEST_SSK_DET_CIPHERTEXT: [u8; 4] = [178, 91, 200, 139];
+const TEST_NACL_CIPHERTEXT: [u8; 36] = [0, 0, 0, 0,
+                                        0, 0, 0, 0,
+                                        0, 0, 0, 0,
+                                        0, 0, 0, 0,
+                                        1, 242, 22, 45,
+                                        228, 36, 202, 193,
+                                        131, 56, 182, 176,
+                                        89, 5, 47, 88,
+                                        243, 16, 189, 25];
+const TEST_NACL_SSK_CIPHERTEXT: [u8; 36] = [0, 0, 0, 0,
+                                            0, 0, 0, 0,
+                                            0, 0, 0, 0,
+                                            0, 0, 0, 0,
+                                            175, 153, 180, 147,
+                                            246, 123, 253, 41,
+                                            159, 169, 32, 114,
+                                            64, 251, 167, 179,
+                                            178, 91, 200, 139];
 
 #[test]
 fn seal() {
@@ -122,5 +140,52 @@ fn open_detached_with_ssk() {
                                                &TEST_SSK,
                                                &TEST_NONCE).unwrap();
     assert!(message == TEST_MESSAGE);
+    utils::free(message);
+}
+
+#[test]
+fn seal_nacl() {
+    ::test_init();
+
+    let ciphertext = box_::seal_nacl(TEST_MESSAGE,
+                                     &TEST_THEIRPUBLIC_KEY,
+                                     &TEST_MYSECRET_KEY,
+                                     &TEST_NONCE).unwrap();
+    assert!(utils::memcmp(ciphertext, &TEST_NACL_CIPHERTEXT[..]) == 0);
+    utils::free(ciphertext);
+}
+
+#[test]
+fn open_nacl() {
+    ::test_init();
+
+    let message = box_::open_nacl(&TEST_NACL_CIPHERTEXT,
+                                  &TEST_MYPUBLIC_KEY,
+                                  &TEST_THEIRSECRET_KEY,
+                                  &TEST_NONCE).unwrap();
+    assert!(&message[box_::ZEROBYTES..] == TEST_MESSAGE);
+    utils::free(message);
+}
+
+#[test]
+fn seal_nacl_with_ssk() {
+    ::test_init();
+
+    let ciphertext = box_::seal_nacl_with_ssk(TEST_MESSAGE,
+                                              &TEST_SSK,
+                                              &TEST_NONCE).unwrap();
+    println!("{:?}", ciphertext);
+    assert!(utils::memcmp(ciphertext, &TEST_NACL_SSK_CIPHERTEXT[..]) == 0);
+    utils::free(ciphertext);
+}
+
+#[test]
+fn open_nacl_with_ssk() {
+    ::test_init();
+
+    let message = box_::open_nacl_with_ssk(&TEST_NACL_SSK_CIPHERTEXT,
+                                           &TEST_SSK,
+                                           &TEST_NONCE).unwrap();
+    assert!(&message[box_::ZEROBYTES..] == TEST_MESSAGE);
     utils::free(message);
 }
