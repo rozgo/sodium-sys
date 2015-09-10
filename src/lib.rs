@@ -46,6 +46,7 @@ pub mod crypto {
     pub mod keypair;
     pub mod nonce;
     pub mod secretbox;
+    pub mod sign;
     pub mod verify;
 }
 
