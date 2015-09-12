@@ -27,6 +27,8 @@ const TEST_SSK_CIPHERTEXT: [u8; 20] = [175, 153, 180, 147,
                                        64, 251, 167, 179,
                                        178, 91, 200, 139];
 const TEST_SSK_DET_CIPHERTEXT: [u8; 4] = [178, 91, 200, 139];
+const TEST_SEED: [u8; box_::SEEDBYTES] = [0; box_::SEEDBYTES];
+const TEST_OTHER_PK: [u8; box_::PUBLICKEYBYTES] = [0; box_::PUBLICKEYBYTES];
 
 #[bench]
 fn bench_seal(b: &mut Bencher) {
@@ -123,5 +125,54 @@ fn bench_open_detached_with_ssk(b: &mut Bencher) {
                                                        &TEST_SSK,
                                                        &TEST_NONCE).unwrap();
         utils::free(&mut message);
+    });
+}
+
+#[bench]
+fn bench_keypair(b: &mut Bencher) {
+    ::test_init();
+    b.iter(|| {
+        box_::keypair::KeyPair::new().unwrap()
+    });
+}
+
+#[bench]
+fn bench_keypair_seed(b: &mut Bencher) {
+    ::test_init();
+    b.iter(|| {
+        box_::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap()
+    });
+}
+
+#[bench]
+fn bench_keypair_derive(b: &mut Bencher) {
+    ::test_init();
+
+    // Setup an initial keypair.
+    let ikp = box_::keypair::KeyPair::new().unwrap();
+
+    // Activate the keys.
+    ikp.activate_pk();
+    ikp.activate_sk();
+
+    b.iter(|| {
+        box_::keypair::KeyPair::derivepk(&mut ikp.sk_bytes_mut()).unwrap()
+    });
+}
+
+#[bench]
+fn bench_keypair_sharedsecret(b: &mut Bencher) {
+    ::test_init();
+
+    // Setup an initial keypair.
+    let ikp = box_::keypair::KeyPair::new().unwrap();
+
+    // Activate the keys.
+    ikp.activate_pk();
+    ikp.activate_sk();
+
+    b.iter(|| {
+        let mut ssk = ikp.shared_secret(&TEST_OTHER_PK).unwrap();
+        utils::free(&mut ssk);
     });
 }

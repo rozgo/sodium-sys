@@ -35,28 +35,24 @@ use libc::{c_int, c_uchar, c_ulonglong};
 use SSError::{self, DECRYPT, ENCRYPT};
 use utils;
 
-mod crypto_box_curve25519xsalsa20poly1305;
+pub mod keypair;
 
-// 32 bytes for crypto_box_curve25519xsalsa20poly1305.
-pub const SEEDBYTES: usize = crypto_box_curve25519xsalsa20poly1305::SEEDBYTES;
-// 32 bytes for crypto_box_curve25519xsalsa20poly1305.
-pub const PUBLICKEYBYTES: usize =
-    crypto_box_curve25519xsalsa20poly1305::PUBLICKEYBYTES;
-// 32 bytes for crypto_box_curve25519xsalsa20poly1305.
-pub const SECRETKEYBYTES: usize =
-    crypto_box_curve25519xsalsa20poly1305::SECRETKEYBYTES;
-// 32 bytes for crypto_box_curve25519xsalsa20poly1305.
-pub const BEFORENMBYTES: usize =
-    crypto_box_curve25519xsalsa20poly1305::BEFORENMBYTES;
-// 24 bytes for crypto_box_curve25519xsalsa20poly1305.
-pub const NONCEBYTES: usize = crypto_box_curve25519xsalsa20poly1305::NONCEBYTES;
-// 32 bytes for crypto_box_curve25519xsalsa20poly1305.
-pub const ZEROBYTES: usize = crypto_box_curve25519xsalsa20poly1305::ZEROBYTES;
-// 16 bytes for crypto_box_curve25519xsalsa20poly1305.
-pub const BOXZEROBYTES: usize =
-    crypto_box_curve25519xsalsa20poly1305::BOXZEROBYTES;
-// 16 bytes for crypto_box_curve25519xsalsa20poly1305.
-pub const MACBYTES: usize = crypto_box_curve25519xsalsa20poly1305::MACBYTES;
+// 32 bytes.
+pub const SEEDBYTES: usize = 32;
+// 32 bytes.
+pub const PUBLICKEYBYTES: usize = 32;
+// 32 bytes.
+pub const SECRETKEYBYTES: usize = 32;
+// 32 bytes.
+pub const BEFORENMBYTES: usize = 32;
+// 24 bytes.
+pub const NONCEBYTES: usize = 24;
+// 32 bytes.
+pub const ZEROBYTES: usize = 32;
+// 16 bytes.
+pub const BOXZEROBYTES: usize = 16;
+// 16 bytes.
+pub const MACBYTES: usize = ZEROBYTES - BOXZEROBYTES;
 
 extern "C" {
     fn crypto_box_easy(c: *mut c_uchar,
@@ -141,20 +137,18 @@ extern "C" {
 ///
 /// ```
 /// use sodium_sys::core;
-/// use sodium_sys::crypto::{keypair, nonce, box_};
+/// use sodium_sys::crypto::{nonce, box_};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair =box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another keypair and activate for use.
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
@@ -211,20 +205,18 @@ pub fn seal<'a>(message: &[u8],
 ///
 /// ```
 /// use sodium_sys::{core, utils};
-/// use sodium_sys::crypto::{keypair, nonce, box_};
+/// use sodium_sys::crypto::{nonce, box_};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair = box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another keypair and activate for use.
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
@@ -283,20 +275,18 @@ pub type SealDetachedResult<'a> = Result<(&'a mut [u8], &'a mut [u8]), SSError>;
 ///
 /// ```
 /// use sodium_sys::{core, utils};
-/// use sodium_sys::crypto::{keypair, nonce, box_};
+/// use sodium_sys::crypto::{nonce, box_};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair = box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another keypair and activate for use.
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
@@ -352,21 +342,19 @@ pub fn seal_detached<'a>(message: &[u8],
 ///
 /// ```
 /// use sodium_sys::{core, utils};
-/// use sodium_sys::crypto::{box_, keypair, nonce};
+/// use sodium_sys::crypto::{box_, nonce};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair = box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another their keypair and activate for use (normally this would be
 /// // supplied).
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
@@ -430,20 +418,18 @@ pub fn open_detached<'a>(ciphertext: &[u8],
 ///
 /// ```
 /// use sodium_sys::{core, utils};
-/// use sodium_sys::crypto::{keypair, nonce, box_};
+/// use sodium_sys::crypto::{nonce, box_};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair = box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another keypair and activate for use.
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
@@ -498,20 +484,18 @@ pub fn seal_with_ssk<'a>(message: &[u8],
 ///
 /// ```
 /// use sodium_sys::{core, utils};
-/// use sodium_sys::crypto::{keypair, nonce, box_};
+/// use sodium_sys::crypto::{nonce, box_};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair = box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another keypair and activate for use.
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
@@ -567,20 +551,18 @@ pub fn open_with_ssk<'a>(ciphertext: &[u8],
 ///
 /// ```
 /// use sodium_sys::{core, utils};
-/// use sodium_sys::crypto::{keypair, nonce, box_};
+/// use sodium_sys::crypto::{nonce, box_};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair = box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another keypair and activate for use.
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
@@ -635,21 +617,19 @@ pub fn seal_detached_with_ssk<'a>(message: &[u8],
 ///
 /// ```
 /// use sodium_sys::{core, utils};
-/// use sodium_sys::crypto::{box_, keypair, nonce};
+/// use sodium_sys::crypto::{box_, nonce};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair = box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another their keypair and activate for use (normally this would be
 /// // supplied).
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
@@ -711,20 +691,18 @@ pub fn open_detached_with_ssk<'a>(ciphertext: &[u8],
 ///
 /// ```
 /// use sodium_sys::core;
-/// use sodium_sys::crypto::{keypair, nonce, box_};
+/// use sodium_sys::crypto::{nonce, box_};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair = box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another keypair and activate for use.
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
@@ -791,20 +769,18 @@ pub fn seal_nacl<'a>(message: &[u8],
 ///
 /// ```
 /// use sodium_sys::core;
-/// use sodium_sys::crypto::{keypair, nonce, box_};
+/// use sodium_sys::crypto::{nonce, box_};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair = box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another keypair and activate for use.
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
@@ -863,20 +839,18 @@ pub fn open_nacl<'a>(ciphertext: &[u8],
 ///
 /// ```
 /// use sodium_sys::core;
-/// use sodium_sys::crypto::{keypair, nonce, box_};
+/// use sodium_sys::crypto::{nonce, box_};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair = box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another keypair and activate for use.
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
@@ -940,20 +914,18 @@ pub fn seal_nacl_with_ssk<'a>(message: &[u8],
 ///
 /// ```
 /// use sodium_sys::core;
-/// use sodium_sys::crypto::{keypair, nonce, box_};
+/// use sodium_sys::crypto::{nonce, box_};
 ///
 /// // Initialize sodium_sys
 /// core::init();
 ///
 /// // Create the keypair and activate for use.
-/// let mykeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                       box_::PUBLICKEYBYTES).unwrap();
+/// let mykeypair = box_::keypair::KeyPair::new().unwrap();
 /// mykeypair.activate_sk();
 /// mykeypair.activate_pk();
 ///
 /// // Create another keypair and activate for use.
-/// let theirkeypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-///                                          box_::PUBLICKEYBYTES).unwrap();
+/// let theirkeypair = box_::keypair::KeyPair::new().unwrap();
 /// theirkeypair.activate_sk();
 /// theirkeypair.activate_pk();
 ///
