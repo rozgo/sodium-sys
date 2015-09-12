@@ -43,9 +43,9 @@ pub mod crypto {
     pub mod auth;
     pub mod box_;
     pub mod key;
-    pub mod keypair;
     pub mod nonce;
     pub mod secretbox;
+    pub mod sign;
     pub mod verify;
 }
 
@@ -66,6 +66,8 @@ pub enum SSError {
     KEYGEN(&'static str),
     /// An error returned from functions that generate MACs.
     MAC(&'static str),
+    /// An error returned from signing functions.
+    SIGN(&'static str),
     /// Errors which can occur when attempting to interpret a byte slice as a
     /// str.
     STR(str::Utf8Error),

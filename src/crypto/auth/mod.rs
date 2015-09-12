@@ -23,14 +23,10 @@ use libc::{c_int,c_uchar,c_ulonglong};
 use SSError::{self,MAC};
 use utils;
 
-mod crypto_auth_hmacsha512256;
-
-/// 32 bytes for hmacsha512256.
-pub const BYTES: usize = crypto_auth_hmacsha512256::BYTES;
-/// 32 bytes for hmacsha512256.
-pub const KEYBYTES: usize = crypto_auth_hmacsha512256::KEYBYTES;
-/// hmacsha512256.
-pub const PRIMITIVE: &'static str = "hmacsha512256";
+/// 32 bytes.
+pub const BYTES: usize = 32;
+/// 32 bytes.
+pub const KEYBYTES: usize = 32;
 
 extern "C" {
     fn crypto_auth(out: *mut c_uchar, in_: *const c_uchar,

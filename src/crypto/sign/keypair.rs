@@ -1,6 +1,7 @@
 //! Memory safe keypair implementation.
 use libc::{c_int, c_uchar};
 use SSError::{self, KEYGEN};
+use crypto::sign::{PUBLICKEYBYTES,SECRETKEYBYTES,SEEDBYTES};
 use utils;
 
 /// The key structure contains information necessary to create slices from raw
@@ -13,16 +14,15 @@ pub struct KeyPair {
 }
 
 extern "C" {
-    fn crypto_box_seed_keypair(pk: *mut c_uchar,
-                               sk: *mut c_uchar,
-                               seed: *const c_uchar) -> c_int;
-    fn crypto_box_keypair(pk: *mut c_uchar, sk: *mut c_uchar) -> c_int;
-    fn crypto_scalarmult_base(q: *mut c_uchar, n: *const c_uchar) -> c_int;
+    fn crypto_sign_keypair(pk: *mut c_uchar, sk: *mut c_uchar) -> c_int;
+    fn crypto_sign_seed_keypair(pk: *mut c_uchar,
+                                sk: *mut c_uchar,
+                                seed: *const c_uchar) -> c_int;
 }
 
 impl KeyPair {
-    /// Create a new keypair with the given sizes.  The keys are generated with
-    /// the *crypto_box_keypair()* function to ensure safety and then set to no
+    /// Create a new keypair.  The keys are generated with the
+    /// *crypto_sign_keypair()* function to ensure safety and then set to no
     /// access via *mprotect_noaccess()* to ensure the data is not inadvertently
     /// (or maliciously) altered.  Note in order to use the keypair, the caller
     /// must use *activate_sk()* and *activate_pk()*.
@@ -30,34 +30,34 @@ impl KeyPair {
     /// # Examples
     ///
     /// ```
-    /// use sodium_sys::core;
-    /// use sodium_sys::crypto::{box_, keypair};
+    /// use sodium_sys::{core, utils};
+    /// use sodium_sys::crypto::sign;
     ///
     /// // Initialize the sodium-sys library.
     /// core::init();
     ///
     /// // Create a keypair for the box_ module.
-    /// let keypair = keypair::KeyPair::new(box_::SECRETKEYBYTES,
-    ///                                     box_::PUBLICKEYBYTES).unwrap();
+    /// let keypair = sign::keypair::KeyPair::new().unwrap();
     ///
     /// // Activate the keys for use (they are created as no access).
     /// keypair.activate_sk();
     /// keypair.activate_pk();
     ///
     /// // Validate.
-    /// assert!(keypair.sk_bytes().len() == box_::SECRETKEYBYTES);
-    /// assert!(keypair.sk_bytes() != [0; box_::SECRETKEYBYTES]);
-    /// assert!(keypair.pk_bytes().len() == box_::PUBLICKEYBYTES);
-    /// assert!(keypair.pk_bytes() != [0; box_::PUBLICKEYBYTES]);
+    /// assert!(keypair.sk_bytes().len() == sign::SECRETKEYBYTES);
+    /// assert!(utils::memcmp(keypair.sk_bytes(),
+    ///                       &[0; sign::SECRETKEYBYTES]) != 0);
+    /// assert!(keypair.pk_bytes().len() == sign::PUBLICKEYBYTES);
+    /// assert!(keypair.pk_bytes() != [0; sign::PUBLICKEYBYTES]);
     /// ```
-    pub fn new(sk_size: usize, pk_size: usize) -> Result<KeyPair, SSError> {
-        let mut sk = utils::malloc(sk_size);
-        let mut pk = utils::malloc(pk_size);
+    pub fn new() -> Result<KeyPair, SSError> {
+        let mut sk = utils::malloc(SECRETKEYBYTES);
+        let mut pk = utils::malloc(PUBLICKEYBYTES);
 
         let res: i32;
 
         unsafe {
-            res = crypto_box_keypair(pk.as_mut_ptr(), sk.as_mut_ptr());
+            res = crypto_sign_keypair(pk.as_mut_ptr(), sk.as_mut_ptr());
         }
 
         if res == 0 {
@@ -66,61 +66,58 @@ impl KeyPair {
 
             Ok(KeyPair {
                 s_key_ptr: sk.as_mut_ptr(),
-                s_size: sk_size,
+                s_size: SECRETKEYBYTES,
                 p_key_ptr: pk.as_mut_ptr(),
-                p_size: pk_size,
+                p_size: PUBLICKEYBYTES,
             })
         } else {
             Err(KEYGEN("Unable to generate keypair"))
         }
     }
 
-    /// Create a new keypair with the given sizes and the given seed key.  The
-    /// keys are generated with the *crypto_box_seed_keypair()* function to
-    /// ensure safety and then set to no access via *mprotect_noaccess()* to
-    /// ensure the data is not inadvertently (or maliciously) altered.  Note in
-    /// order to use the keypair, the caller must use *activate_sk()* and
-    /// *activate_pk()*.
+    /// Create a new keypair with the given seed key.  The keys are generated
+    /// with the *crypto_sign_seed_keypair()* function to ensure safety and then
+    /// set to no access via *mprotect_noaccess()* to ensure the data is not
+    /// inadvertently (or maliciously) altered.  Note in order to use the
+    /// keypair, the caller must use *activate_sk()* and *activate_pk()*.
     ///
     /// # Examples
     ///
     /// ```
-    /// use sodium_sys::core;
-    /// use sodium_sys::crypto::{box_, keypair};
+    /// use sodium_sys::{core, utils};
+    /// use sodium_sys::crypto::sign;
     ///
     /// // Initialize the sodium-sys library.
     /// core::init();
     ///
     /// // Test seed key (don't use all zeros, it's a bad idea).
-    /// const TEST_SEED_KEY: [u8; box_::SEEDBYTES] = [0; box_::SEEDBYTES];
+    /// const TEST_SEED_KEY: [u8; sign::SEEDBYTES] = [0; sign::SEEDBYTES];
     ///
     /// // Create a keypair for the box_ module.
-    /// let keypair = keypair::KeyPair::seed(&TEST_SEED_KEY,
-    ///                                      box_::SECRETKEYBYTES,
-    ///                                      box_::PUBLICKEYBYTES).unwrap();
+    /// let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED_KEY).unwrap();
     ///
     /// // Activate the keys for use (they are created as no access).
     /// keypair.activate_sk();
     /// keypair.activate_pk();
     ///
     /// // Validate.
-    /// assert!(keypair.sk_bytes().len() == box_::SECRETKEYBYTES);
-    /// assert!(keypair.sk_bytes() != [0; box_::SECRETKEYBYTES]);
-    /// assert!(keypair.pk_bytes().len() == box_::PUBLICKEYBYTES);
-    /// assert!(keypair.pk_bytes() != [0; box_::PUBLICKEYBYTES]);
+    /// assert!(keypair.sk_bytes().len() == sign::SECRETKEYBYTES);
+    /// assert!(utils::memcmp(keypair.sk_bytes(),
+    ///                       &[0; sign::SECRETKEYBYTES]) != 0);
+    /// assert!(keypair.pk_bytes().len() == sign::PUBLICKEYBYTES);
+    /// assert!(keypair.pk_bytes() != [0; sign::PUBLICKEYBYTES]);
     /// ```
-    pub fn seed(seed: &[u8],
-                sk_size: usize,
-                pk_size: usize) -> Result<KeyPair, SSError> {
-        let mut sk = utils::malloc(sk_size);
-        let mut pk = utils::malloc(pk_size);
+    pub fn new_with_seed(seed: &[u8]) -> Result<KeyPair, SSError> {
+        assert!(seed.len() == SEEDBYTES);
+        let mut sk = utils::malloc(SECRETKEYBYTES);
+        let mut pk = utils::malloc(PUBLICKEYBYTES);
 
         let res: i32;
 
         unsafe {
-            res = crypto_box_seed_keypair(pk.as_mut_ptr(),
-                                          sk.as_mut_ptr(),
-                                          seed.as_ptr());
+            res = crypto_sign_seed_keypair(pk.as_mut_ptr(),
+                                           sk.as_mut_ptr(),
+                                           seed.as_ptr());
         }
 
         if res == 0 {
@@ -129,46 +126,12 @@ impl KeyPair {
 
             Ok(KeyPair {
                 s_key_ptr: sk.as_mut_ptr(),
-                s_size: sk_size,
+                s_size: SECRETKEYBYTES,
                 p_key_ptr: pk.as_mut_ptr(),
-                p_size: pk_size,
+                p_size: PUBLICKEYBYTES,
             })
         } else {
             Err(KEYGEN("Unable to generate keypair"))
-        }
-    }
-
-    /// In addition, *derivepk()* can be used to compute the public key given a secret key
-    /// previously generated by *KeyPair::new()* or *KeyPair::seed()*.
-    pub fn derivepk(sk: &[u8],
-                    sk_size: usize,
-                    pk_size: usize) -> Result<KeyPair, SSError> {
-        let mut nsk = utils::malloc(sk_size);
-        let mut pk = utils::malloc(pk_size);
-
-        // Copy the old secret into this KeyPair to avoid any drop issues.
-        for (i,b) in (0..).zip(sk.iter()) {
-            nsk[i] = *b;
-        }
-
-        let res: i32;
-
-        unsafe {
-            res = crypto_scalarmult_base(pk.as_mut_ptr(), nsk.as_ptr());
-        }
-
-        if res == 0 {
-            utils::mprotect_noaccess(nsk);
-            utils::mprotect_noaccess(pk);
-
-            Ok(KeyPair {
-                s_key_ptr: nsk.as_mut_ptr(),
-                s_size: sk_size,
-                p_key_ptr: pk.as_mut_ptr(),
-                p_size: pk_size,
-            })
-        } else {
-            Err(KEYGEN("Unable to derive public key"))
         }
     }
 
