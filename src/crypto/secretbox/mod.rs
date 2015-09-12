@@ -12,21 +12,16 @@ use libc::{c_uchar, c_int, c_ulonglong};
 use SSError::{self, DECRYPT, ENCRYPT};
 use utils;
 
-pub mod crypto_secretbox_xsalsa20poly1305;
-
-/// 32 bytes for xsalsa20poly1305 primitive.
-pub const KEYBYTES: usize = crypto_secretbox_xsalsa20poly1305::KEYBYTES;
-/// 24 bytes for xsalsa20poly1305 primitive.
-pub const NONCEBYTES: usize = crypto_secretbox_xsalsa20poly1305::NONCEBYTES;
-/// 16 bytes for xsalsa20poly1305 prmitive.
-pub const MACBYTES: usize = crypto_secretbox_xsalsa20poly1305::MACBYTES;
-/// xsalsa20poly1305
-pub const PRIMITIVE: &'static str = "xsalsa20poly1305";
-/// 32 bytes for xsalsa20poly1305 primitive.
-pub const ZEROBYTES: usize = crypto_secretbox_xsalsa20poly1305::ZEROBYTES;
-/// 16 bytes for xsalsa20poly1305 primitive.
-pub const BOXZEROBYTES: usize =
-                        crypto_secretbox_xsalsa20poly1305::BOXZEROBYTES;
+/// 32 bytes.
+pub const KEYBYTES: usize = 32;
+/// 24 bytes.
+pub const NONCEBYTES: usize = 24;
+/// 32 bytes.
+pub const ZEROBYTES: usize = 32;
+/// 16 bytes.
+pub const BOXZEROBYTES: usize = 16;
+/// ZEROBYTES - BOXZEROBYTES (16 bytes).
+pub const MACBYTES: usize = ZEROBYTES - BOXZEROBYTES;
 
 extern "C" {
     fn crypto_secretbox_easy(c: *mut c_uchar,

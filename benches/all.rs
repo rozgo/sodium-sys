@@ -21,7 +21,6 @@ mod crypto {
     mod crypto_auth;
     mod crypto_box;
     mod crypto_key;
-    mod crypto_keypair;
     mod crypto_nonce;
     mod crypto_secretbox;
     mod crypto_verify;

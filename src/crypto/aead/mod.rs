@@ -36,19 +36,18 @@ use SSError::{self, DECRYPT, ENCRYPT};
 use std::ptr;
 use utils;
 
-mod crypto_aead_chacha20poly1305;
 
-/// 8 bytes for chacha20poly1305.
-pub const NPUBBYTES: usize = crypto_aead_chacha20poly1305::NPUBBYTES;
+/// 32 bytes.
+pub const KEYBYTES: usize = 32;
+/// 0 bytes.
+// pub const NSECBYTES: usize = 0;
+/// 8 bytes.
+pub const NPUBBYTES: usize = 8;
 #[cfg(feature = "latest")]
-/// 12 bytes for chacha20poly1305.
-pub const IETF_NPUBBYTES: usize = crypto_aead_chacha20poly1305::IETF_NPUBBYTES;
-/// 32 bytes for chacha20poly1305.
-pub const KEYBYTES: usize = crypto_aead_chacha20poly1305::KEYBYTES;
-/// 16 bytes for chacha20poly1305.
-pub const ABYTES: usize = crypto_aead_chacha20poly1305::ABYTES;
-/// chacha20poly1305.
-pub const PRIMITIVE: &'static str = "chacha20poly1305";
+/// 12 bytes.
+pub const IETF_NPUBBYTES: usize = 12;
+/// 16 bytes.
+pub const ABYTES: usize = 16;
 
 extern "C" {
     fn crypto_aead_chacha20poly1305_encrypt(c: *mut c_uchar,
