@@ -26,16 +26,16 @@ pub const PUBLICKEYBYTES: usize = 32;
 pub const SECRETKEYBYTES: usize = 64;
 
 extern "C" {
-    pub fn crypto_sign(sm: *mut c_uchar,
-                       smlen_p: *mut c_ulonglong,
-                       m: *const c_uchar,
-                       mlen: c_ulonglong,
-                       sk: *const c_uchar) -> c_int;
-    pub fn crypto_sign_open(m: *mut c_uchar,
-                            mlen_p: *mut c_ulonglong,
-                            sm: *const c_uchar,
-                            smlen: c_ulonglong,
-                            pk: *const c_uchar) -> c_int;
+    fn crypto_sign(sm: *mut c_uchar,
+                   smlen_p: *mut c_ulonglong,
+                   m: *const c_uchar,
+                   mlen: c_ulonglong,
+                   sk: *const c_uchar) -> c_int;
+    fn crypto_sign_open(m: *mut c_uchar,
+                        mlen_p: *mut c_ulonglong,
+                        sm: *const c_uchar,
+                        smlen: c_ulonglong,
+                        pk: *const c_uchar) -> c_int;
     pub fn crypto_sign_detached(sig: *mut c_uchar,
                                 siglen_p: *mut c_ulonglong,
                                 m: *const c_uchar,
@@ -142,5 +142,51 @@ pub fn open<'a>(signedmessage: &[u8],
         Ok(message)
     } else {
         Err(VERIFYSIGNED("Unable to verify signed message!"))
+    }
+}
+
+/// The *sign_detached()* function generates a signature for message, using a
+/// secret key.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core;
+/// use sodium_sys::crypto::sign;
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let keypair = sign::keypair::KeyPair::new().unwrap();
+/// keypair.activate_sk();
+/// keypair.activate_pk();
+///
+/// // Generate the signature.
+/// let signature = sign::sign_detached(b"test", keypair.sk_bytes()).unwrap();
+///
+/// println!("{:?}", signature);
+/// ```
+pub fn sign_detached<'a>(message: &[u8],
+                         sk: &[u8]) -> Result<&'a [u8], SSError> {
+    assert!(sk.len() == SECRETKEYBYTES);
+
+    let mut signature = utils::malloc(BYTES);
+    let smlen: u64 = 0;
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_sign_detached(signature.as_mut_ptr(),
+                                   smlen as *mut c_ulonglong,
+                                   message.as_ptr(),
+                                   message.len() as c_ulonglong,
+                                   sk.as_ptr());
+    }
+
+    if res == 0 {
+        Ok(signature)
+    } else {
+        Err(SIGN("Unable to generate signature!"))
     }
 }

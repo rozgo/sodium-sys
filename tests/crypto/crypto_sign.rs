@@ -21,6 +21,23 @@ const TEST_SIGNEDMESSAGE: [u8; sign::BYTES+4] = [150, 83, 113, 5,
                                                  63, 134, 146, 9,
                                                  116, 101, 115, 116];
 
+const TEST_SIGNATURE: [u8; sign::BYTES] = [150, 83, 113, 5,
+                                           97, 195, 22, 155,
+                                           122, 149, 119, 160,
+                                           25, 85, 22, 157,
+                                           239, 24, 63, 179,
+                                           174, 40, 46, 5,
+                                           190, 198, 36, 130,
+                                           110, 37, 91, 12,
+                                           62, 237, 227, 236,
+                                           254, 5, 79, 181,
+                                           164, 14, 254, 174,
+                                           240, 64, 175, 170,
+                                           69, 34, 12, 205,
+                                           123, 248, 65, 59,
+                                           165, 49, 242, 79,
+                                           63, 134, 146, 9];
+
 #[test]
 fn keypair() {
     ::test_init();
@@ -68,4 +85,18 @@ fn open() {
                              &mut keypair.pk_bytes_mut()).unwrap();
     assert!(message == TEST_MESSAGE);
     utils::free(message);
+}
+
+#[test]
+fn sign_detached() {
+    ::test_init();
+
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    keypair.activate_sk();
+
+    let signature = sign::sign_detached(TEST_MESSAGE,
+                                        &mut keypair.sk_bytes_mut()).unwrap();
+    println!("{:?}", signature);
+    assert!(utils::memcmp(signature, &TEST_SIGNATURE) == 0);
+    utils::free(signature);
 }
