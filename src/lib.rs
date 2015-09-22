@@ -73,6 +73,8 @@ pub enum SSError {
     STR(str::Utf8Error),
     /// A possible error value from the String::from_utf8 function.
     STRING(string::FromUtf8Error),
+    /// A possible error when verfiying a signed message.
+    VERIFYSIGNED(&'static str),
 }
 
 impl From<NulError> for SSError {

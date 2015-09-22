@@ -11,7 +11,7 @@
 //! Warning: this is different from authenticated encryption. Appending a
 //! signature does not change the representation of the message itself.
 use libc::{c_int, c_uchar, c_ulonglong};
-use SSError::{self, SIGN};
+use SSError::{self, SIGN, VERIFYSIGNED};
 use utils;
 
 pub mod keypair;
@@ -92,5 +92,55 @@ pub fn sign<'a>(message: &[u8], sk: &[u8]) -> Result<&'a [u8], SSError> {
         Ok(signedmessage)
     } else {
         Err(SIGN("Unable to sign message!"))
+    }
+}
+
+/// The *open()* function verifies a signature and returns the message with the
+/// signature stripped if successful.
+///
+/// pk is the public key of the sender that signed the message.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core;
+/// use sodium_sys::crypto::sign;
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let keypair = sign::keypair::KeyPair::new().unwrap();
+/// keypair.activate_sk();
+/// keypair.activate_pk();
+///
+/// // Generate the signed message.
+/// let signedmessage = sign::sign(b"test", keypair.sk_bytes()).unwrap();
+/// let message = sign::open(signedmessage, keypair.pk_bytes()).unwrap();
+///
+/// assert!(message == b"test");
+/// ```
+pub fn open<'a>(signedmessage: &[u8],
+                pk: &[u8]) -> Result<&'a [u8], SSError> {
+    assert!(pk.len() == PUBLICKEYBYTES);
+
+    let mut message = utils::malloc(signedmessage.len() - BYTES);
+    let mlen: u64 = 0;
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_sign_open(message.as_mut_ptr(),
+                                   mlen as *mut c_ulonglong,
+                                   signedmessage.as_ptr(),
+                                   signedmessage.len() as c_ulonglong,
+                                   pk.as_ptr());
+    }
+
+    if res == 0 {
+        utils::mprotect_readonly(message);
+        Ok(message)
+    } else {
+        Err(VERIFYSIGNED("Unable to verify signed message!"))
     }
 }

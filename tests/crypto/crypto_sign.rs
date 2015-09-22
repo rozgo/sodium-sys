@@ -2,7 +2,7 @@ use sodium_sys::utils;
 use sodium_sys::crypto::sign;
 
 const TEST_MESSAGE: &'static [u8] = b"test";
-const TEST_MYSECRET_KEY: [u8; sign::SECRETKEYBYTES] = [0; sign::SECRETKEYBYTES];
+const TEST_SEED: [u8; sign::SEEDBYTES] = [0; sign::SEEDBYTES];
 const TEST_SIGNEDMESSAGE: [u8; sign::BYTES+4] = [150, 83, 113, 5,
                                                  97, 195, 22, 155,
                                                  122, 149, 119, 160,
@@ -11,20 +11,61 @@ const TEST_SIGNEDMESSAGE: [u8; sign::BYTES+4] = [150, 83, 113, 5,
                                                  174, 40, 46, 5,
                                                  190, 198, 36, 130,
                                                  110, 37, 91, 12,
-                                                 247, 210, 217, 138,
-                                                 216, 38, 85, 132,
-                                                 206, 165, 140, 108,
-                                                 105, 111, 243, 15,
-                                                 219, 186, 34, 39,
-                                                 187, 65, 16, 161,
-                                                 237, 41, 152, 22,
-                                                 36, 138, 140, 9,
+                                                 62, 237, 227, 236,
+                                                 254, 5, 79, 181,
+                                                 164, 14, 254, 174,
+                                                 240, 64, 175, 170,
+                                                 69, 34, 12, 205,
+                                                 123, 248, 65, 59,
+                                                 165, 49, 242, 79,
+                                                 63, 134, 146, 9,
                                                  116, 101, 115, 116];
+
+#[test]
+fn keypair() {
+    ::test_init();
+
+    let keypair = sign::keypair::KeyPair::new().unwrap();
+    keypair.activate_sk();
+    keypair.activate_pk();
+    assert!(keypair.sk_bytes().len() == sign::SECRETKEYBYTES);
+    assert!(keypair.pk_bytes().len() == sign::PUBLICKEYBYTES);
+}
+
+#[test]
+fn keypair_seed() {
+    ::test_init();
+
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    keypair.activate_sk();
+    keypair.activate_pk();
+    assert!(keypair.sk_bytes().len() == sign::SECRETKEYBYTES);
+    assert!(keypair.pk_bytes().len() == sign::PUBLICKEYBYTES);
+}
+
 #[test]
 fn sign() {
     ::test_init();
 
-    let signedmessage = sign::sign(TEST_MESSAGE, &TEST_MYSECRET_KEY).unwrap();
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    keypair.activate_sk();
+
+    let signedmessage = sign::sign(TEST_MESSAGE,
+                                   &mut keypair.sk_bytes_mut()).unwrap();
+    println!("{:?}", signedmessage);
     assert!(utils::memcmp(signedmessage, &TEST_SIGNEDMESSAGE) == 0);
     utils::free(signedmessage);
+}
+
+#[test]
+fn open() {
+    ::test_init();
+
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    keypair.activate_pk();
+
+    let message = sign::open(&TEST_SIGNEDMESSAGE,
+                             &mut keypair.pk_bytes_mut()).unwrap();
+    assert!(message == TEST_MESSAGE);
+    utils::free(message);
 }
