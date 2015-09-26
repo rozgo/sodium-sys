@@ -43,7 +43,7 @@ const TEST_SIGNATURE: [u8; sign::BYTES] = [150, 83, 113, 5,
 fn bench_keypair(b: &mut Bencher) {
     ::test_init();
     b.iter(|| {
-        let mut keypair = sign::keypair::KeyPair::new().unwrap();
+        sign::keypair::KeyPair::new().unwrap();
     });
 }
 
@@ -51,19 +51,42 @@ fn bench_keypair(b: &mut Bencher) {
 fn bench_keypair_seed(b: &mut Bencher) {
     ::test_init();
     b.iter(|| {
-        let mut keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+        sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    });
+}
+
+#[bench]
+fn bench_keypair_get_seed(b: &mut Bencher) {
+    ::test_init();
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    keypair.activate_sk();
+
+    b.iter(|| {
+        let mut seed = keypair.get_seed().unwrap();
+        utils::free(&mut seed);
+    });
+}
+
+#[bench]
+fn bench_keypair_get_pk(b: &mut Bencher) {
+    ::test_init();
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    keypair.activate_sk();
+    b.iter(|| {
+        let mut pk = keypair.get_pk().unwrap();
+        utils::free(&mut pk);
     });
 }
 
 #[bench]
 fn bench_sign(b: &mut Bencher) {
     ::test_init();
-    let mut keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
     keypair.activate_sk();
 
     b.iter(|| {
         let mut sm = sign::sign(TEST_MESSAGE,
-                                keypair.sk_bytes_mut()).unwrap();
+                                keypair.sk_bytes()).unwrap();
         utils::free(&mut sm);
     });
 }
@@ -71,12 +94,12 @@ fn bench_sign(b: &mut Bencher) {
 #[bench]
 fn bench_open(b: &mut Bencher) {
     ::test_init();
-    let mut keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
     keypair.activate_pk();
 
     b.iter(|| {
-        let mut m = sign::open(TEST_SIGNEDMESSAGE,
-                               keypair.pk_bytes_mut()).unwrap();
+        let mut m = sign::open(&TEST_SIGNEDMESSAGE,
+                               keypair.pk_bytes()).unwrap();
         utils::free(&mut m);
     });
 }
@@ -84,12 +107,23 @@ fn bench_open(b: &mut Bencher) {
 #[bench]
 fn bench_sign_detached(b: &mut Bencher) {
     ::test_init();
-    let mut keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
     keypair.activate_sk();
 
     b.iter(|| {
         let mut s = sign::sign_detached(TEST_MESSAGE,
-                                        keypair.sk_bytes_mut()).unwrap();
+                                        keypair.sk_bytes()).unwrap();
         utils::free(&mut s);
+    });
+}
+
+#[bench]
+fn bench_open_detached(b: &mut Bencher) {
+    ::test_init();
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    keypair.activate_pk();
+
+    b.iter(|| {
+        sign::open_detached(TEST_MESSAGE, &TEST_SIGNATURE, keypair.pk_bytes());
     });
 }

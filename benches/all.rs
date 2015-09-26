@@ -23,5 +23,6 @@ mod crypto {
     mod crypto_key;
     mod crypto_nonce;
     mod crypto_secretbox;
+    mod crypto_sign;
     mod crypto_verify;
 }

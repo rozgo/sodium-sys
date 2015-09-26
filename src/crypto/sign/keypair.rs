@@ -18,6 +18,10 @@ extern "C" {
     fn crypto_sign_seed_keypair(pk: *mut c_uchar,
                                 sk: *mut c_uchar,
                                 seed: *const c_uchar) -> c_int;
+    fn crypto_sign_ed25519_sk_to_seed(seed: *mut c_uchar,
+                                      sk: *const c_uchar) -> c_int;
+    fn crypto_sign_ed25519_sk_to_pk(pk: *mut c_uchar,
+                                    sk: *const c_uchar) -> c_int;
 }
 
 impl KeyPair {
@@ -189,6 +193,40 @@ impl KeyPair {
     /// key isn't currently being used, but may be at a later time.
     pub fn deactivate_pk(&self) {
         utils::mprotect_noaccess(self.pk_bytes());
+    }
+
+    // Extract the seed from the secret key.
+    pub fn get_seed<'a>(&self) -> Result<&'a [u8], SSError> {
+        let res: i32;
+        let mut seed = utils::malloc(SEEDBYTES);
+
+        unsafe {
+            res = crypto_sign_ed25519_sk_to_seed(seed.as_mut_ptr(),
+                                                 self.sk_bytes().as_ptr());
+        }
+
+        if res == 0 {
+            Ok(seed)
+        } else {
+            Err(KEYGEN("Unable to extract seed"))
+        }
+    }
+
+    // Extract the public key from the secret key.
+    pub fn get_pk<'a>(&self) -> Result<&'a [u8], SSError> {
+        let res: i32;
+        let mut pk = utils::malloc(PUBLICKEYBYTES);
+
+        unsafe {
+            res = crypto_sign_ed25519_sk_to_pk(pk.as_mut_ptr(),
+                                               self.sk_bytes().as_ptr());
+        }
+
+        if res == 0 {
+            Ok(pk)
+        } else {
+            Err(KEYGEN("Unable to extract public key"))
+        }
     }
 }
 

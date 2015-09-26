@@ -36,19 +36,15 @@ extern "C" {
                         sm: *const c_uchar,
                         smlen: c_ulonglong,
                         pk: *const c_uchar) -> c_int;
-    pub fn crypto_sign_detached(sig: *mut c_uchar,
-                                siglen_p: *mut c_ulonglong,
-                                m: *const c_uchar,
-                                mlen: c_ulonglong,
-                                sk: *const c_uchar) -> c_int;
-    pub fn crypto_sign_verify_detached(sig: *const c_uchar,
-                                       m: *const c_uchar,
-                                       mlen: c_ulonglong,
-                                       pk: *const c_uchar) -> c_int;
-    pub fn crypto_sign_ed25519_sk_to_seed(seed: *mut c_uchar,
-                                          sk: *const c_uchar) -> c_int;
-    pub fn crypto_sign_ed25519_sk_to_pk(pk: *mut c_uchar,
-                                        sk: *const c_uchar) -> c_int;
+    fn crypto_sign_detached(sig: *mut c_uchar,
+                            siglen_p: *mut c_ulonglong,
+                            m: *const c_uchar,
+                            mlen: c_ulonglong,
+                            sk: *const c_uchar) -> c_int;
+    fn crypto_sign_verify_detached(sig: *const c_uchar,
+                                   m: *const c_uchar,
+                                   mlen: c_ulonglong,
+                                   pk: *const c_uchar) -> c_int;
 }
 
 /// The *sign()* function prepends a signature to a message, using a secret key.
@@ -189,4 +185,47 @@ pub fn sign_detached<'a>(message: &[u8],
     } else {
         Err(SIGN("Unable to generate signature!"))
     }
+}
+
+/// The *open_detached()* function verifies a signature is valid for a message
+/// and returns 0 on success, or -1 otherwise.
+///
+/// pk is the public key of the sender that signed the message.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::core;
+/// use sodium_sys::crypto::sign;
+///
+/// // Initialize sodium_sys
+/// core::init();
+///
+/// // Create the keypair and activate for use.
+/// let keypair = sign::keypair::KeyPair::new().unwrap();
+/// keypair.activate_sk();
+/// keypair.activate_pk();
+///
+/// // Generate the signature.
+/// let signature = sign::sign_detached(b"test", keypair.sk_bytes()).unwrap();
+/// let res = sign::open_detached(b"test", signature, keypair.pk_bytes());
+///
+/// assert!(res == 0);
+/// ```
+pub fn open_detached(message: &[u8],
+                     signature: &[u8],
+                     pk: &[u8]) -> i32 {
+    assert!(signature.len() == BYTES);
+    assert!(pk.len() == PUBLICKEYBYTES);
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_sign_verify_detached(signature.as_ptr(),
+                                          message.as_ptr(),
+                                          message.len() as c_ulonglong,
+                                          pk.as_ptr());
+    }
+
+    res
 }

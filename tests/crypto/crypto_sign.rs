@@ -61,6 +61,29 @@ fn keypair_seed() {
 }
 
 #[test]
+fn keypair_get_seed() {
+    ::test_init();
+
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    keypair.activate_sk();
+    let seed = keypair.get_seed().unwrap();
+
+    assert!(seed == TEST_SEED);
+}
+
+#[test]
+fn keypair_get_pk() {
+    ::test_init();
+
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    keypair.activate_sk();
+    keypair.activate_pk();
+    let pk = keypair.get_pk().unwrap();
+
+    assert!(pk == keypair.pk_bytes());
+}
+
+#[test]
 fn sign() {
     ::test_init();
 
@@ -99,4 +122,17 @@ fn sign_detached() {
     println!("{:?}", signature);
     assert!(utils::memcmp(signature, &TEST_SIGNATURE) == 0);
     utils::free(signature);
+}
+
+#[test]
+fn open_detached() {
+    ::test_init();
+
+    let keypair = sign::keypair::KeyPair::new_with_seed(&TEST_SEED).unwrap();
+    keypair.activate_pk();
+
+    let res = sign::open_detached(&TEST_MESSAGE,
+                                  &TEST_SIGNATURE,
+                                  &mut keypair.pk_bytes_mut());
+    assert!(res == 0);
 }
