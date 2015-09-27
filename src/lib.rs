@@ -32,21 +32,11 @@ use std::ffi::NulError;
 use std::str;
 use std::string;
 
-pub mod core;
-pub mod randombytes;
-pub mod utils;
-pub mod version;
-
 /// Crypography library modules.
 pub mod crypto {
-    pub mod aead;
-    pub mod auth;
-    pub mod box_;
-    pub mod key;
-    pub mod nonce;
-    pub mod secretbox;
-    pub mod sign;
-    pub mod verify;
+    pub mod asymmetrickey;
+    pub mod symmetrickey;
+    pub mod utils;
 }
 
 pub use self::SSError::*;

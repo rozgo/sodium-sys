@@ -22,9 +22,3 @@ libc = "*"
 
 [dev-dependencies]
 regex = "*"
-
-[[test]]
-name = "all"
-
-[[bench]]
-name = "all"
