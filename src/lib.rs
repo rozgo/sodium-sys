@@ -35,6 +35,7 @@ use std::string;
 /// Crypography library modules.
 pub mod crypto {
     pub mod asymmetrickey;
+    pub mod hash;
     pub mod symmetrickey;
     pub mod utils;
 }
@@ -52,6 +53,8 @@ pub enum SSError {
     DECRYPT(&'static str),
     /// An error returned from functions that encrypt messages.
     ENCRYPT(&'static str),
+    /// An error returned from functions that hash messages.
+    HASH(&'static str),
     /// An error returned from functions the generate keypairs.
     KEYGEN(&'static str),
     /// An error returned from functions that generate MACs.

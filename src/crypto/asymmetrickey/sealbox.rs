@@ -29,15 +29,15 @@ pub const MACBYTES: usize = ZEROBYTES - BOXZEROBYTES;
 pub const SEALBYTES: usize = PUBLICKEYBYTES + MACBYTES;
 
 extern "C" {
-    pub fn crypto_box_seal(out: *mut c_uchar,
-                           in_: *const c_uchar,
-                           inlen: c_ulonglong,
-                           pk: *const c_uchar) -> c_int;
-    pub fn crypto_box_seal_open(out: *mut c_uchar,
-                                in_: *const c_uchar,
-                                inlen: c_ulonglong,
-                                pk: *const c_uchar,
-                                sk: *const c_uchar) -> c_int;
+    fn crypto_box_seal(out: *mut c_uchar,
+                       in_: *const c_uchar,
+                       inlen: c_ulonglong,
+                       pk: *const c_uchar) -> c_int;
+    fn crypto_box_seal_open(out: *mut c_uchar,
+                            in_: *const c_uchar,
+                            inlen: c_ulonglong,
+                            pk: *const c_uchar,
+                            sk: *const c_uchar) -> c_int;
 }
 
 /// The *seal()* function encrypts a message for a recipients public key. It
