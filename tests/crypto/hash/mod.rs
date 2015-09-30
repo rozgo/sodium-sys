@@ -1,0 +1,2 @@
+mod generichash;
+mod shorthash;

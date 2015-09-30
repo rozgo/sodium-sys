@@ -14,6 +14,7 @@ fn test_init() {
 
 mod crypto {
     mod asymmetrickey;
+    mod hash;
     mod symmetrickey;
     mod utils;
 }
