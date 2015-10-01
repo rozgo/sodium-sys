@@ -47,7 +47,6 @@ fn sign() {
 
     let signedmessage = sign::sign(TEST_MESSAGE,
                                    &mut keypair.sk_bytes_mut()).unwrap();
-    println!("{:?}", signedmessage);
     assert!(secmem::memcmp(signedmessage, &TEST_SIGNEDMESSAGE) == 0);
     secmem::free(signedmessage);
 }
@@ -74,7 +73,6 @@ fn sign_detached() {
 
     let signature = sign::sign_detached(TEST_MESSAGE,
                                         &mut keypair.sk_bytes_mut()).unwrap();
-    println!("{:?}", signature);
     assert!(secmem::memcmp(signature, &TEST_SIGNATURE) == 0);
     secmem::free(signature);
 }

@@ -174,7 +174,6 @@ fn seal_nacl_with_ssk() {
     let ciphertext = authenc::seal_nacl_with_ssk(TEST_MESSAGE,
                                                  &TEST_SSK,
                                                  &TEST_NONCE).unwrap();
-    println!("{:?}", ciphertext);
     assert!(secmem::memcmp(ciphertext, &TEST_NACL_SSK_CIPHERTEXT[..]) == 0);
     secmem::free(ciphertext);
 }

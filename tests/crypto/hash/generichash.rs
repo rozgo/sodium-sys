@@ -45,7 +45,6 @@ fn hash_no_key_no_size() {
     ::test_init();
 
     let hash = generichash::hash(TEST_MESSAGE, None, None).unwrap();
-    println!("{:?}", hash);
     assert!(hash.len() == generichash::BYTES);
     assert!(hash == TEST_H1);
     secmem::free(hash);
