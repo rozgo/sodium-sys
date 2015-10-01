@@ -1,4 +1,4 @@
-use sodium_sys::crypto::utils::{randombytes, secmem};
+use sodium_sys::crypto::utils::secmem;
 use sodium_sys::crypto::hash::passhash;
 
 const TEST_SALT: [u8; passhash::SALTBYTES] = [0; passhash::SALTBYTES];
@@ -34,6 +34,7 @@ const TEST_HASH1: [u8; 64] = [47, 107, 42, 1,
                               244, 85, 214, 38,
                               76, 32, 53, 97,
                               159, 36, 2, 89];
+
 #[test]
 fn keygen() {
     ::test_init();
@@ -47,8 +48,6 @@ fn keygen() {
 fn keygen_sensitive() {
     ::test_init();
 
-    let mut salt = [0; passhash::SALTBYTES];
-    randombytes::random_byte_array(&mut salt);
     let key = passhash::keygen(b"test",
                                64,
                                &TEST_SALT,
@@ -56,4 +55,42 @@ fn keygen_sensitive() {
                                Some(passhash::MEMLIMIT_SENSITIVE)).unwrap();
     assert!(key.len() == 64);
     assert!(secmem::memcmp(key, &TEST_HASH1) == 0);
+}
+
+#[test]
+fn pwhash() {
+    ::test_init();
+
+    let hash = passhash::pwhash(b"test", None, None).unwrap();
+    assert!(hash.len() == passhash::STRBYTES);
+}
+
+#[test]
+fn pwhash_sensitive() {
+    ::test_init();
+
+    let hash = passhash::pwhash(b"test",
+                                Some(passhash::OPSLIMIT_SENSITIVE),
+                                Some(passhash::MEMLIMIT_SENSITIVE)).unwrap();
+    assert!(hash.len() == passhash::STRBYTES);
+}
+
+#[test]
+fn pwhash_verify() {
+    ::test_init();
+
+    let hash = passhash::pwhash(b"test", None, None).unwrap();
+    assert!(hash.len() == passhash::STRBYTES);
+    assert!(passhash::pwhash_verify(b"test", hash));
+}
+
+#[test]
+fn pwhash_verify_sensitive() {
+    ::test_init();
+
+    let hash = passhash::pwhash(b"test",
+                                Some(passhash::OPSLIMIT_SENSITIVE),
+                                Some(passhash::MEMLIMIT_SENSITIVE)).unwrap();
+    assert!(hash.len() == passhash::STRBYTES);
+    assert!(passhash::pwhash_verify(b"test", hash));
 }

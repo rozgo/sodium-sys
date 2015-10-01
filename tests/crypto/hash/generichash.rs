@@ -39,6 +39,26 @@ const TEST_H4: [u8; generichash::BYTES] = [245, 142, 71, 203,
                                            37, 10, 12, 41,
                                            192, 71, 56, 117,
                                            207, 254, 163, 108];
+const TEST_H5: [u8; generichash::BYTES_MIN] = [32, 90, 8, 102,
+                                               166, 166, 223, 50,
+                                               47, 12, 22, 84,
+                                               146, 158, 221, 187];
+const TEST_H6: [u8; generichash::BYTES_MAX] = [148, 209, 218, 183,
+                                               121, 232, 14, 169,
+                                               56, 218, 210, 97,
+                                               82, 158, 146, 36,
+                                               209, 124, 214, 232,
+                                               183, 181, 7, 11,
+                                               43, 0, 201, 93,
+                                               246, 149, 22, 189,
+                                               195, 46, 133, 212,
+                                               108, 250, 214, 155,
+                                               34, 107, 116, 220,
+                                               86, 106, 232, 174,
+                                               37, 243, 190, 129,
+                                               209, 22, 13, 127,
+                                               60, 139, 249, 183,
+                                               42, 6, 218, 59];
 
 #[test]
 fn hash_no_key_no_size() {
@@ -104,4 +124,26 @@ fn hash_key_no_size() {
 
     let hash1 = generichash::hash(TEST_MESSAGE, None, Some(&TEST_KEY)).unwrap();
     assert!(hash == hash1);
+}
+
+#[test]
+fn hash_key_min_size() {
+    ::test_init();
+
+    let hash = generichash::hash(TEST_MESSAGE,
+                                 Some(generichash::BYTES_MIN),
+                                 Some(&TEST_KEY)).unwrap();
+    assert!(hash.len() == generichash::BYTES_MIN);
+    assert!(hash == TEST_H5);
+}
+
+#[test]
+fn hash_key_max_size() {
+    ::test_init();
+
+    let hash = generichash::hash(TEST_MESSAGE,
+                                 Some(generichash::BYTES_MAX),
+                                 Some(&TEST_KEY)).unwrap();
+    assert!(hash.len() == generichash::BYTES_MAX);
+    assert!(secmem::memcmp(hash, &TEST_H6) == 0);
 }
