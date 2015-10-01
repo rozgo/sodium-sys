@@ -1,0 +1,5 @@
+#!/bin/bash
+MHZ=$(lscpu | grep "CPU MHz" | cut -d":" -f2 | tr -d " ")
+ARCH=$(uname -rs)
+grep "bench" $1 | awk 'BEGIN { OFS=":"; } { print $2,$5,$8; }' | sed 's/)//g' | sed 's/crypto::.*:://g'
+echo "$ARCH:$MHZ"
