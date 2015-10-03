@@ -3,8 +3,8 @@
 //!
 //! Sample use cases:
 //!
-//! File integrity checking
-//! Creating unique identifiers to index arbitrary long data
+//! - File integrity checking
+//! - Creating unique identifiers to index arbitrary long data
 use libc::{c_int, c_uchar, c_ulonglong, size_t, uint8_t, uint64_t};
 use SSError::{self, HASH};
 use crypto::utils::secmem;
