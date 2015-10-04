@@ -59,7 +59,22 @@ const TEST_H6: [u8; generichash::BYTES_MAX] = [148, 209, 218, 183,
                                                209, 22, 13, 127,
                                                60, 139, 249, 183,
                                                42, 6, 218, 59];
-
+const TEST_H7: [u8; 64] = [55, 42, 83, 185,
+                           95, 70, 231, 117,
+                           185, 115, 3, 30,
+                           64, 184, 68, 242,
+                           67, 137, 101, 112,
+                           25, 247, 183, 84,
+                           10, 159, 4, 150,
+                           244, 234, 212, 162,
+                           228, 176, 80, 144,
+                           150, 100, 97, 31,
+                           176, 244, 183, 199,
+                           233, 44, 60, 4,
+                           200, 71, 135, 190,
+                           127, 107, 142, 223,
+                           123, 246, 188, 49,
+                           133, 107, 108, 118];
 #[test]
 fn hash_no_key_no_size() {
     ::test_init();
@@ -146,4 +161,43 @@ fn hash_key_max_size() {
                                  Some(&TEST_KEY)).unwrap();
     assert!(hash.len() == generichash::BYTES_MAX);
     assert!(secmem::memcmp(hash, &TEST_H6) == 0);
+}
+
+#[test]
+fn init() {
+    ::test_init();
+
+    let mut state = Default::default();
+    let outlen = 64;
+    let _ = generichash::init(&mut state, outlen, None).unwrap();
+    assert!(state.h.len() == 8);
+    assert!(state.t.len() == 2);
+    assert!(state.f.len() == 2);
+    assert!(state.buf.len() == 256);
+}
+
+#[test]
+fn update() {
+    ::test_init();
+
+    let mut state = Default::default();
+    let outlen = 64;
+    let _ = generichash::init(&mut state, outlen, None).unwrap();
+    let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
+    let s1 = state.buflen;
+    let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
+    assert!(s1 * 2 == state.buflen);
+}
+
+#[test]
+fn finalize() {
+    ::test_init();
+
+    let mut state = Default::default();
+    let outlen = 64;
+    let _ = generichash::init(&mut state, outlen, None).unwrap();
+    let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
+    let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
+    let hash = generichash::finalize(&mut state, outlen).unwrap();
+    assert!(secmem::memcmp(hash, &TEST_H7) == 0);
 }

@@ -15,7 +15,6 @@ use SSError::{self, HASH};
 use std::{mem, ptr};
 
 #[repr(C)]
-#[repr(packed)]
 #[derive(Copy)]
 pub struct SHA256State {
     pub state: [uint64_t; 8],
@@ -45,6 +44,26 @@ impl Clone for SHA256State {
     }
 }
 
+#[repr(C)]
+#[derive(Copy)]
+pub struct SHA512State {
+    pub state: [uint64_t; 8],
+    pub count: [uint64_t; 2],
+    pub buf: [c_uchar; 128],
+}
+
+impl Clone for SHA512State {
+    fn clone(&self) -> SHA512State {
+        unsafe {
+            let mut x: SHA512State = mem::uninitialized();
+            ptr::copy::<SHA512State>(mem::transmute(self),
+                                     mem::transmute(&mut x),
+                                     mem::size_of::<SHA512State>());
+            x
+        }
+    }
+}
+
 // 64 bytes.
 pub const SHA512_BYTES: usize = 64;
 // 32 bytes.
@@ -54,11 +73,20 @@ extern "C" {
     fn crypto_hash_sha256(out: *mut c_uchar,
                           in_: *const c_uchar,
                           inlen: c_ulonglong) -> c_int;
-    pub fn crypto_hash_sha256_init(state: *mut SHA256State) -> c_int;
-    pub fn crypto_hash_sha256_update(state: *mut SHA256State,
+    fn crypto_hash_sha256_init(state: *mut SHA256State) -> c_int;
+    fn crypto_hash_sha256_update(state: *mut SHA256State,
+                                 in_: *const c_uchar,
+                                 inlen: c_ulonglong) -> c_int;
+    fn crypto_hash_sha256_final(state: *mut SHA256State,
+                                out: *mut c_uchar) -> c_int;
+    fn crypto_hash_sha512(out: *mut c_uchar,
+                          in_: *const c_uchar,
+                          inlen: c_ulonglong) -> c_int;
+    pub fn crypto_hash_sha512_init(state: *mut SHA512State) -> c_int;
+    pub fn crypto_hash_sha512_update(state: *mut SHA512State,
                                      in_: *const c_uchar,
                                      inlen: c_ulonglong) -> c_int;
-    pub fn crypto_hash_sha256_final(state: *mut SHA256State,
+    pub fn crypto_hash_sha512_final(state: *mut SHA512State,
                                     out: *mut c_uchar) -> c_int;
 }
 
@@ -199,5 +227,38 @@ pub fn finalize256<'a>(state: &'a mut SHA256State)
         Ok(out)
     } else {
         Err(HASH("Unable to update hash state"))
+    }
+}
+
+/// The *hash512()* function creates the SHA-256 hash for the given message.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::hash::sha2;
+///
+/// // Initialize sodium_sys
+/// init::init();
+///
+/// // Generate the hash.
+/// let hash = sha2::hash512(b"test").unwrap();
+/// assert!(hash.len() == sha2::SHA512_BYTES);
+/// ```
+pub fn hash512<'a>(message: &'a [u8]) -> Result<&'a [u8], SSError> {
+    let mut out = secmem::malloc(SHA512_BYTES);
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_hash_sha512(out.as_mut_ptr(),
+                                 message.as_ptr(),
+                                 message.len() as c_ulonglong);
+    }
+
+    if res == 0 {
+        Ok(out)
+    } else {
+        Err(HASH("Unable to hash message"))
     }
 }

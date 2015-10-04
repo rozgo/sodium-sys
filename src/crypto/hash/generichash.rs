@@ -9,6 +9,7 @@ use libc::{c_int, c_uchar, c_ulonglong, size_t, uint8_t, uint64_t};
 use SSError::{self, HASH};
 use crypto::utils::secmem;
 use std::default::Default;
+use std::fmt::{self, Debug};
 use std::{mem, ptr};
 
 pub const BYTES_MIN: usize = 16;
@@ -52,6 +53,18 @@ impl Clone for HashState {
                                    mem::size_of::<HashState>());
             x
         }
+    }
+}
+
+impl Debug for HashState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+               "[H: {:?}, t: {:?}, f: {:?}, buflen: {:?}, last_node: {:?}]",
+               self.h,
+               self.t,
+               self.f,
+               self.buflen,
+               self.last_node)
     }
 }
 
