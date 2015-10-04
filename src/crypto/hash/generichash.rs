@@ -20,13 +20,12 @@ pub const KEYBYTES_MAX: usize = 64;
 pub const KEYBYTES: usize = 32;
 
 #[repr(C)]
-#[repr(packed)]
 #[derive(Copy)]
 pub struct HashState {
     pub h: [uint64_t; 8],
     pub t: [uint64_t; 2],
     pub f: [uint64_t; 2],
-    pub buf: [uint8_t; 2 * 128],
+    pub buf: [uint8_t; 256],
     pub buflen: size_t,
     pub last_node: uint8_t,
 }
@@ -37,7 +36,7 @@ impl Default for HashState {
             h: [0; 8],
             t: [0; 2],
             f: [0; 2],
-            buf: [0; 2 * 128],
+            buf: [0; 256],
             buflen: 0,
             last_node: 0
         }
@@ -193,6 +192,8 @@ pub fn hash<'a>(message: &'a [u8],
     }
 }
 
+/// Initialize the sha256 multi-part hash.
+///
 /// # Examples
 ///
 /// ```
@@ -207,6 +208,10 @@ pub fn hash<'a>(message: &'a [u8],
 /// let mut state = Default::default();
 /// let outlen = 64;
 /// let _ = generichash::init(&mut state, outlen, None).unwrap();
+/// assert!(state.h.len() == 8);
+/// assert!(state.t.len() == 2);
+/// assert!(state.f.len() == 2);
+/// assert!(state.buf.len() == 256);
 /// ```
 pub fn init<'a>(state: &'a mut HashState,
                 s: usize,
@@ -236,6 +241,8 @@ pub fn init<'a>(state: &'a mut HashState,
     }
 }
 
+/// Update the sha256 multi-part hash.
+///
 /// # Examples
 ///
 /// ```
@@ -250,12 +257,10 @@ pub fn init<'a>(state: &'a mut HashState,
 /// let mut state = Default::default();
 /// let outlen = 64;
 /// let _ = generichash::init(&mut state, outlen, None).unwrap();
-///
-/// // Update the hash state.
-/// let message = b"test";
-/// let _ = generichash::update(&mut state, message);
-/// let message1 = b"testsomemore";
-/// let _ = generichash::update(&mut state, message1);
+/// let _ = generichash::update(&mut state, b"test").unwrap();
+/// let s1 = state.buflen;
+/// let _ = generichash::update(&mut state, b"test").unwrap();
+/// assert!(s1 * 2 == state.buflen);
 /// ```
 pub fn update<'a>(state: &'a mut HashState,
                   in_: &[u8]) -> Result<(), SSError> {
@@ -274,6 +279,8 @@ pub fn update<'a>(state: &'a mut HashState,
     }
 }
 
+/// Finalize and return the sha256 multi-part hash.
+///
 /// # Examples
 ///
 /// ```
@@ -290,10 +297,8 @@ pub fn update<'a>(state: &'a mut HashState,
 /// let _ = generichash::init(&mut state, outlen, None).unwrap();
 ///
 /// // Update the hash state.
-/// let message = b"test";
-/// let _ = generichash::update(&mut state, message);
-/// let message1 = b"testsomemore";
-/// let _ = generichash::update(&mut state, message1);
+/// let _ = generichash::update(&mut state, b"test");
+/// let _ = generichash::update(&mut state, b"test");
 ///
 /// // Finalize the hash.
 /// let hash = generichash::finalize(&mut state, outlen).unwrap();
