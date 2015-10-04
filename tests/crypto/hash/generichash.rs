@@ -164,6 +164,15 @@ fn hash_key_max_size() {
 }
 
 #[test]
+fn state_size() {
+    ::test_init();
+
+    let state_size = generichash::state_size().unwrap();
+    let state = secmem::malloc(state_size);
+    assert!(state.len() == state_size);
+}
+
+#[test]
 fn init() {
     ::test_init();
 

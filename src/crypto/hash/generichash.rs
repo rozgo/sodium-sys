@@ -5,12 +5,10 @@
 //!
 //! - File integrity checking
 //! - Creating unique identifiers to index arbitrary long data
-use libc::{c_int, c_uchar, c_ulonglong, size_t, uint8_t, uint64_t};
+use libc::{c_int, c_uchar, c_ulonglong, size_t};
 use SSError::{self, HASH};
 use crypto::utils::secmem;
-use std::default::Default;
-use std::fmt::{self, Debug};
-use std::{mem, ptr};
+use std::ptr;
 
 pub const BYTES_MIN: usize = 16;
 pub const BYTES_MAX: usize = 64;
@@ -18,54 +16,6 @@ pub const BYTES: usize = 32;
 pub const KEYBYTES_MIN: usize = 16;
 pub const KEYBYTES_MAX: usize = 64;
 pub const KEYBYTES: usize = 32;
-
-#[repr(C)]
-#[derive(Copy)]
-pub struct HashState {
-    pub h: [uint64_t; 8],
-    pub t: [uint64_t; 2],
-    pub f: [uint64_t; 2],
-    pub buf: [uint8_t; 256],
-    pub buflen: size_t,
-    pub last_node: uint8_t,
-}
-
-impl Default for HashState {
-    fn default() -> HashState {
-        HashState {
-            h: [0; 8],
-            t: [0; 2],
-            f: [0; 2],
-            buf: [0; 256],
-            buflen: 0,
-            last_node: 0
-        }
-    }
-}
-
-impl Clone for HashState {
-    fn clone(&self) -> HashState {
-        unsafe {
-            let mut x: HashState = mem::uninitialized();
-            ptr::copy::<HashState>(mem::transmute(self),
-                                   mem::transmute(&mut x),
-                                   mem::size_of::<HashState>());
-            x
-        }
-    }
-}
-
-impl Debug for HashState {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-               "[H: {:?}, t: {:?}, f: {:?}, buflen: {:?}, last_node: {:?}]",
-               self.h,
-               self.t,
-               self.f,
-               self.buflen,
-               self.last_node)
-    }
-}
 
 extern "C" {
     fn crypto_generichash_statebytes() -> c_int;
@@ -193,6 +143,24 @@ pub fn hash<'a>(message: &'a [u8],
     }
 }
 
+/// The *state_size()* function should be used in conjunction with
+/// *utils::malloc()* to allocate the memory for the generic hash state at
+/// runtime.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::crypto::utils::{init, secmem};
+/// use sodium_sys::crypto::hash::generichash;
+///
+/// // Initialize sodium_sys
+/// init::init();
+///
+/// // Initialize the hash state.
+/// let state_size = generichash::state_size().unwrap();
+/// let state = secmem::malloc(state_size);
+/// assert!(state.len() == state_size);
+/// ```
 pub fn state_size() -> Result<usize, SSError> {
     let res: i32;
 
