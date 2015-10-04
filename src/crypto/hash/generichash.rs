@@ -68,20 +68,21 @@ impl Debug for HashState {
 }
 
 extern "C" {
+    fn crypto_generichash_statebytes() -> c_int;
     fn crypto_generichash(out: *mut c_uchar,
                           outlen: size_t,
                           in_: *const c_uchar,
                           inlen: c_ulonglong,
                           key: *const c_uchar,
                           keylen: size_t) -> c_int;
-    fn crypto_generichash_init(state: *mut HashState,
+    fn crypto_generichash_init(state: *mut c_uchar,
                                key: *const c_uchar,
                                keylen: size_t,
                                outlen: size_t) -> c_int;
-    fn crypto_generichash_update(state: *mut HashState,
+    fn crypto_generichash_update(state: *mut c_uchar,
                                  in_: *const c_uchar,
                                  inlen: c_ulonglong) -> c_int;
-    fn crypto_generichash_final(state: *mut HashState,
+    fn crypto_generichash_final(state: *mut c_uchar,
                                 out: *mut c_uchar,
                                 outlen: size_t) -> c_int;
 }
@@ -192,28 +193,39 @@ pub fn hash<'a>(message: &'a [u8],
     }
 }
 
+pub fn state_size() -> Result<usize, SSError> {
+    let res: i32;
+
+    unsafe {
+        res = crypto_generichash_statebytes();
+    }
+
+    if res > 0 {
+        Ok(res as usize)
+    } else {
+        Err(HASH("Unable to determind state size"))
+    }
+}
+
 /// Initialize the sha256 multi-part hash.
 ///
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::utils::{init, secmem};
 /// use sodium_sys::crypto::hash::generichash;
-/// use std::default::Default;
 ///
 /// // Initialize sodium_sys
 /// init::init();
 ///
 /// // Initialize the hash state.
-/// let mut state = Default::default();
+/// let state_size = generichash::state_size().unwrap();
+/// let mut state = secmem::malloc(state_size);
 /// let outlen = 64;
 /// let _ = generichash::init(&mut state, outlen, None).unwrap();
-/// assert!(state.h.len() == 8);
-/// assert!(state.t.len() == 2);
-/// assert!(state.f.len() == 2);
-/// assert!(state.buf.len() == 256);
+/// assert!(state.len() == state_size);
 /// ```
-pub fn init<'a>(state: &'a mut HashState,
+pub fn init<'a>(state: &'a mut [u8],
                 s: usize,
                 k: Option<&[u8]>) -> Result<(), SSError> {
     assert!(s >= BYTES_MIN);
@@ -231,7 +243,10 @@ pub fn init<'a>(state: &'a mut HashState,
     let res: i32;
 
     unsafe {
-        res = crypto_generichash_init(state, key, keylen, s as size_t);
+        res = crypto_generichash_init(state.as_mut_ptr(),
+                                      key,
+                                      keylen,
+                                      s as size_t);
     }
 
     if res == 0 {
@@ -246,28 +261,28 @@ pub fn init<'a>(state: &'a mut HashState,
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::utils::{init, secmem};
 /// use sodium_sys::crypto::hash::generichash;
-/// use std::default::Default;
 ///
 /// // Initialize sodium_sys
 /// init::init();
 ///
 /// // Initialize the hash state.
-/// let mut state = Default::default();
+/// let state_size = generichash::state_size().unwrap();
+/// let mut state = secmem::malloc(state_size);
 /// let outlen = 64;
 /// let _ = generichash::init(&mut state, outlen, None).unwrap();
+///
+/// // Update the hash state
 /// let _ = generichash::update(&mut state, b"test").unwrap();
-/// let s1 = state.buflen;
 /// let _ = generichash::update(&mut state, b"test").unwrap();
-/// assert!(s1 * 2 == state.buflen);
 /// ```
-pub fn update<'a>(state: &'a mut HashState,
+pub fn update<'a>(state: &'a mut [u8],
                   in_: &[u8]) -> Result<(), SSError> {
     let res: i32;
 
     unsafe {
-        res = crypto_generichash_update(state,
+        res = crypto_generichash_update(state.as_mut_ptr(),
                                         in_.as_ptr(),
                                         in_.len() as c_ulonglong);
     }
@@ -284,27 +299,27 @@ pub fn update<'a>(state: &'a mut HashState,
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::utils::{init, secmem};
 /// use sodium_sys::crypto::hash::generichash;
-/// use std::default::Default;
 ///
 /// // Initialize sodium_sys
 /// init::init();
 ///
 /// // Initialize the hash state.
-/// let mut state = Default::default();
+/// let state_size = generichash::state_size().unwrap();
+/// let mut state = secmem::malloc(state_size);
 /// let outlen = 64;
 /// let _ = generichash::init(&mut state, outlen, None).unwrap();
 ///
-/// // Update the hash state.
-/// let _ = generichash::update(&mut state, b"test");
-/// let _ = generichash::update(&mut state, b"test");
+/// // Update the hash state
+/// let _ = generichash::update(&mut state, b"test").unwrap();
+/// let _ = generichash::update(&mut state, b"test").unwrap();
 ///
 /// // Finalize the hash.
 /// let hash = generichash::finalize(&mut state, outlen).unwrap();
 /// assert!(hash.len() == outlen);
 /// ```
-pub fn finalize<'a>(state: &'a mut HashState,
+pub fn finalize<'a>(state: &'a mut [u8],
                     s: usize) -> Result<&'a [u8], SSError> {
     assert!(s >= BYTES_MIN);
     assert!(s <= BYTES_MAX);
@@ -314,7 +329,9 @@ pub fn finalize<'a>(state: &'a mut HashState,
     let res: i32;
 
     unsafe {
-        res = crypto_generichash_final(state, out.as_mut_ptr(), s as size_t);
+        res = crypto_generichash_final(state.as_mut_ptr(),
+                                       out.as_mut_ptr(),
+                                       s as size_t);
     }
 
     if res == 0 {

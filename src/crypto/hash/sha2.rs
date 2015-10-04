@@ -52,6 +52,16 @@ pub struct SHA512State {
     pub buf: [c_uchar; 128],
 }
 
+impl Default for SHA512State {
+    fn default() -> SHA512State {
+        SHA512State {
+            state: [0; 8],
+            count: [0; 2],
+            buf: [0; 128]
+        }
+    }
+}
+
 impl Clone for SHA512State {
     fn clone(&self) -> SHA512State {
         unsafe {
@@ -82,12 +92,12 @@ extern "C" {
     fn crypto_hash_sha512(out: *mut c_uchar,
                           in_: *const c_uchar,
                           inlen: c_ulonglong) -> c_int;
-    pub fn crypto_hash_sha512_init(state: *mut SHA512State) -> c_int;
-    pub fn crypto_hash_sha512_update(state: *mut SHA512State,
-                                     in_: *const c_uchar,
-                                     inlen: c_ulonglong) -> c_int;
-    pub fn crypto_hash_sha512_final(state: *mut SHA512State,
-                                    out: *mut c_uchar) -> c_int;
+    fn crypto_hash_sha512_init(state: *mut SHA512State) -> c_int;
+    fn crypto_hash_sha512_update(state: *mut SHA512State,
+                                 in_: *const c_uchar,
+                                 inlen: c_ulonglong) -> c_int;
+    fn crypto_hash_sha512_final(state: *mut SHA512State,
+                                out: *mut c_uchar) -> c_int;
 }
 
 /// The *hash256()* function creates the SHA-256 hash for the given message.
@@ -260,5 +270,112 @@ pub fn hash512<'a>(message: &'a [u8]) -> Result<&'a [u8], SSError> {
         Ok(out)
     } else {
         Err(HASH("Unable to hash message"))
+    }
+}
+
+/// # Examples
+///
+/// ```
+/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::hash::sha2;
+/// use std::default::Default;
+///
+/// // Initialize sodium_sys
+/// init::init();
+///
+/// // Initialize the hash state.
+/// let mut state = Default::default();
+/// let _ = sha2::init512(&mut state).unwrap();
+/// ```
+pub fn init512<'a>(state: &'a mut SHA512State) -> Result<(), SSError> {
+    let res: i32;
+
+    unsafe {
+        res = crypto_hash_sha512_init(state);
+    }
+
+    if res == 0 {
+        Ok(())
+    } else {
+        Err(HASH("Unable to initialize hash state"))
+    }
+}
+
+/// # Examples
+///
+/// ```
+/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::hash::sha2;
+/// use std::default::Default;
+///
+/// // Initialize sodium_sys
+/// init::init();
+///
+/// // Initialize the hash state.
+/// let mut state = Default::default();
+/// let _ = sha2::init512(&mut state).unwrap();
+///
+/// // Update the hash state.
+/// let message = b"test";
+/// let _ = sha2::update512(&mut state, message);
+/// let message1 = b"testsomemore";
+/// let _ = sha2::update512(&mut state, message1);
+/// ```
+pub fn update512<'a>(state: &'a mut SHA512State,
+                     in_: &[u8]) -> Result<(), SSError> {
+    let res: i32;
+
+    unsafe {
+        res = crypto_hash_sha512_update(state,
+                                        in_.as_ptr(),
+                                        in_.len() as c_ulonglong);
+    }
+
+    if res == 0 {
+        Ok(())
+    } else {
+        Err(HASH("Unable to update hash state"))
+    }
+}
+
+/// # Examples
+///
+/// ```
+/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::hash::sha2;
+/// use std::default::Default;
+///
+/// // Initialize sodium_sys
+/// init::init();
+///
+/// // Initialize the hash state.
+/// let mut state = Default::default();
+/// let _ = sha2::init512(&mut state).unwrap();
+///
+/// // Update the hash state.
+/// let message = b"test";
+/// let _ = sha2::update512(&mut state, message);
+/// let message1 = b"testsomemore";
+/// let _ = sha2::update512(&mut state, message1);
+///
+/// // Finalize the hash.
+/// let hash = sha2::finalize512(&mut state).unwrap();
+/// assert!(hash.len() == sha2::SHA512_BYTES);
+/// ```
+pub fn finalize512<'a>(state: &'a mut SHA512State)
+    -> Result<&'a [u8], SSError> {
+    let out = secmem::malloc(SHA512_BYTES);
+
+    let res: i32;
+
+    unsafe {
+        res = crypto_hash_sha512_final(state, out.as_mut_ptr());
+    }
+
+    if res == 0 {
+        secmem::mprotect_readonly(out);
+        Ok(out)
+    } else {
+        Err(HASH("Unable to update hash state"))
     }
 }

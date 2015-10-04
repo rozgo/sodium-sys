@@ -167,33 +167,32 @@ fn hash_key_max_size() {
 fn init() {
     ::test_init();
 
-    let mut state = Default::default();
+    let state_size = generichash::state_size().unwrap();
+    let mut state = secmem::malloc(state_size);
     let outlen = 64;
     let _ = generichash::init(&mut state, outlen, None).unwrap();
-    assert!(state.h.len() == 8);
-    assert!(state.t.len() == 2);
-    assert!(state.f.len() == 2);
-    assert!(state.buf.len() == 256);
+    assert!(state.len() == state_size);
 }
 
 #[test]
 fn update() {
     ::test_init();
 
-    let mut state = Default::default();
+    let state_size = generichash::state_size().unwrap();
+    let mut state = secmem::malloc(state_size);
     let outlen = 64;
     let _ = generichash::init(&mut state, outlen, None).unwrap();
     let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
-    let s1 = state.buflen;
     let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
-    assert!(s1 * 2 == state.buflen);
+    assert!(state.len() == state_size);
 }
 
 #[test]
 fn finalize() {
     ::test_init();
 
-    let mut state = Default::default();
+    let state_size = generichash::state_size().unwrap();
+    let mut state = secmem::malloc(state_size);
     let outlen = 64;
     let _ = generichash::init(&mut state, outlen, None).unwrap();
     let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
