@@ -74,3 +74,47 @@ fn bench_hash_key_max_size(b: &mut Bencher) {
         secmem::free(&mut hash);
     });
 }
+
+#[bench]
+fn bench_init(b: &mut Bencher) {
+    let state_size = generichash::state_size().unwrap();
+    let mut state = secmem::malloc(state_size);
+    let outlen = 64;
+
+    b.iter(|| {
+        let _ = generichash::init(&mut state, outlen, None).unwrap();
+    });
+
+    secmem::free(&mut state);
+}
+
+#[bench]
+fn bench_update(b: &mut Bencher) {
+    let state_size = generichash::state_size().unwrap();
+    let mut state = secmem::malloc(state_size);
+    let outlen = 64;
+    let _ = generichash::init(&mut state, outlen, None).unwrap();
+
+    b.iter(|| {
+        let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
+    });
+
+    secmem::free(&mut state);
+}
+
+#[bench]
+fn bench_finalize(b: &mut Bencher) {
+    let state_size = generichash::state_size().unwrap();
+    let mut state = secmem::malloc(state_size);
+    let outlen = 64;
+    let _ = generichash::init(&mut state, outlen, None).unwrap();
+    let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
+    let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
+
+    b.iter(|| {
+        let mut hash = generichash::finalize(&mut state, outlen).unwrap();
+        secmem::free(&mut hash);
+    });
+
+    secmem::free(&mut state);
+}
