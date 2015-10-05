@@ -6,7 +6,8 @@ use std::str;
 
 extern "C" {
     fn sodium_memzero(pnt: *mut c_void, len: size_t) -> ();
-    fn sodium_memcmp(b1_: *const c_void, b2_: *const c_void, len: size_t) -> c_int;
+    fn sodium_memcmp(b1_: *const c_void, b2_:
+                     *const c_void, len: size_t) -> c_int;
     fn sodium_bin2hex(hex: *mut c_char,
                       hex_maxlen: size_t,
                       bin: *const c_uchar,
