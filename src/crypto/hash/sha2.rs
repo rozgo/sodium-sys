@@ -12,7 +12,7 @@
 use crypto::utils::secmem;
 use libc::{c_int, c_uchar, c_ulonglong, uint64_t};
 use SSError::{self, HASH};
-use std::{mem, ptr};
+use std::{fmt, mem, ptr};
 
 #[repr(C)]
 #[derive(Copy)]
@@ -44,6 +44,34 @@ impl Clone for SHA256State {
     }
 }
 
+impl fmt::Debug for SHA256State {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut bufstr = String::from("[");
+        let mut it = self.buf.into_iter();
+
+        loop {
+            match it.next() {
+                Some(b) => {
+                    let v = &b.to_string();
+                    bufstr.push_str(v);
+                    bufstr.push_str(", ");
+                },
+                None    => break,
+            }
+        }
+
+        let _ = bufstr.pop();
+        let _ = bufstr.pop();
+        bufstr.push(']');
+
+        write!(f,
+               "[state: {:?},\n count: {:?},\n buf: {}]",
+               self.state,
+               self.count,
+               bufstr)
+    }
+}
+
 #[repr(C)]
 #[derive(Copy)]
 pub struct SHA512State {
@@ -71,6 +99,34 @@ impl Clone for SHA512State {
                                      mem::size_of::<SHA512State>());
             x
         }
+    }
+}
+
+impl fmt::Debug for SHA512State {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut bufstr = String::from("[");
+        let mut it = self.buf.into_iter();
+
+        loop {
+            match it.next() {
+                Some(b) => {
+                    let v = &b.to_string();
+                    bufstr.push_str(v);
+                    bufstr.push_str(", ");
+                },
+                None    => break,
+            }
+        }
+
+        let _ = bufstr.pop();
+        let _ = bufstr.pop();
+        bufstr.push(']');
+
+        write!(f,
+               "[state: {:?},\n count: {:?},\n buf: {}]",
+               self.state,
+               self.count,
+               bufstr)
     }
 }
 
