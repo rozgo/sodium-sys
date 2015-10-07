@@ -7,8 +7,6 @@ rust:
 matrix:
   allow_failures:
     - os: osx
-before_script:
-  - ulimit -l
 script:
   - cargo build --features latest --verbose
   - cargo test --features latest --verbose

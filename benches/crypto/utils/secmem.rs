@@ -41,6 +41,7 @@ fn bench_hex2bin_multiignore(b: &mut Bencher) {
     b.iter(|| { secmem::hex2bin(hex.to_string(), &mut output, Some(String::from(": "))) });
 }
 
+#[cfg(feature = "mlock_tests")]
 #[bench]
 fn bench_mlock_munlock(b: &mut Bencher) {
     ::test_init();

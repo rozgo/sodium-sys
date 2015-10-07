@@ -46,6 +46,7 @@ fn hex2bin() {
     assert!(output == [0, 1, 254, 255]);
 }
 
+#[cfg(feature = "mlock_tests")]
 #[test]
 fn mlock_munlock() {
     ::test_init();
