@@ -10,125 +10,8 @@
 //! If you are looking for a generic hash function and not specifically SHA-2,
 //! using *generichash()* (BLAKE2b) might be a better choice.
 use crypto::utils::secmem;
-use libc::{c_int, c_uchar, c_ulonglong, uint64_t};
+use libc::{c_int, c_uchar, c_ulonglong, size_t};
 use SSError::{self, HASH};
-use std::{fmt, mem, ptr};
-
-#[repr(C)]
-#[derive(Copy)]
-pub struct SHA256State {
-    pub state: [uint64_t; 8],
-    pub count: [uint64_t; 2],
-    pub buf: [c_uchar; 64],
-}
-
-impl Default for SHA256State {
-    fn default() -> SHA256State {
-        SHA256State {
-            state: [0; 8],
-            count: [0; 2],
-            buf: [0; 64]
-        }
-    }
-}
-
-impl Clone for SHA256State {
-    fn clone(&self) -> SHA256State {
-        unsafe {
-            let mut x: SHA256State = mem::uninitialized();
-            ptr::copy::<SHA256State>(mem::transmute(self),
-                                     mem::transmute(&mut x),
-                                     mem::size_of::<SHA256State>());
-            x
-        }
-    }
-}
-
-impl fmt::Debug for SHA256State {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut bufstr = String::from("[");
-        let mut it = self.buf.into_iter();
-
-        loop {
-            match it.next() {
-                Some(b) => {
-                    let v = &b.to_string();
-                    bufstr.push_str(v);
-                    bufstr.push_str(", ");
-                },
-                None    => break,
-            }
-        }
-
-        let _ = bufstr.pop();
-        let _ = bufstr.pop();
-        bufstr.push(']');
-
-        write!(f,
-               "[state: {:?},\n count: {:?},\n buf: {}]",
-               self.state,
-               self.count,
-               bufstr)
-    }
-}
-
-#[repr(C)]
-#[derive(Copy)]
-pub struct SHA512State {
-    pub state: [uint64_t; 8],
-    pub count: [uint64_t; 2],
-    pub buf: [c_uchar; 128],
-}
-
-impl Default for SHA512State {
-    fn default() -> SHA512State {
-        SHA512State {
-            state: [0; 8],
-            count: [0; 2],
-            buf: [0; 128]
-        }
-    }
-}
-
-impl Clone for SHA512State {
-    fn clone(&self) -> SHA512State {
-        unsafe {
-            let mut x: SHA512State = mem::uninitialized();
-            ptr::copy::<SHA512State>(mem::transmute(self),
-                                     mem::transmute(&mut x),
-                                     mem::size_of::<SHA512State>());
-            x
-        }
-    }
-}
-
-impl fmt::Debug for SHA512State {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut bufstr = String::from("[");
-        let mut it = self.buf.into_iter();
-
-        loop {
-            match it.next() {
-                Some(b) => {
-                    let v = &b.to_string();
-                    bufstr.push_str(v);
-                    bufstr.push_str(", ");
-                },
-                None    => break,
-            }
-        }
-
-        let _ = bufstr.pop();
-        let _ = bufstr.pop();
-        bufstr.push(']');
-
-        write!(f,
-               "[state: {:?},\n count: {:?},\n buf: {}]",
-               self.state,
-               self.count,
-               bufstr)
-    }
-}
 
 // 64 bytes.
 pub const SHA512_BYTES: usize = 64;
@@ -136,23 +19,25 @@ pub const SHA512_BYTES: usize = 64;
 pub const SHA256_BYTES: usize = 32;
 
 extern "C" {
+    fn crypto_hash_sha256_statebytes() -> size_t;
     fn crypto_hash_sha256(out: *mut c_uchar,
                           in_: *const c_uchar,
                           inlen: c_ulonglong) -> c_int;
-    fn crypto_hash_sha256_init(state: *mut SHA256State) -> c_int;
-    fn crypto_hash_sha256_update(state: *mut SHA256State,
+    fn crypto_hash_sha256_init(state: *mut c_uchar) -> c_int;
+    fn crypto_hash_sha256_update(state: *mut c_uchar,
                                  in_: *const c_uchar,
                                  inlen: c_ulonglong) -> c_int;
-    fn crypto_hash_sha256_final(state: *mut SHA256State,
+    fn crypto_hash_sha256_final(state: *mut c_uchar,
                                 out: *mut c_uchar) -> c_int;
+    fn crypto_hash_sha512_statebytes() -> size_t;
     fn crypto_hash_sha512(out: *mut c_uchar,
                           in_: *const c_uchar,
                           inlen: c_ulonglong) -> c_int;
-    fn crypto_hash_sha512_init(state: *mut SHA512State) -> c_int;
-    fn crypto_hash_sha512_update(state: *mut SHA512State,
+    fn crypto_hash_sha512_init(state: *mut c_uchar) -> c_int;
+    fn crypto_hash_sha512_update(state: *mut c_uchar,
                                  in_: *const c_uchar,
                                  inlen: c_ulonglong) -> c_int;
-    fn crypto_hash_sha512_final(state: *mut SHA512State,
+    fn crypto_hash_sha512_final(state: *mut c_uchar,
                                 out: *mut c_uchar) -> c_int;
 }
 
@@ -189,25 +74,88 @@ pub fn hash256<'a>(message: &'a [u8]) -> Result<&'a [u8], SSError> {
     }
 }
 
+/// The *state_size_256()* function should be used in conjunction with
+/// *utils::malloc()* to allocate the memory for the hash state for SHA256 at
+/// runtime.
+///
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::utils::{init, secmem};
 /// use sodium_sys::crypto::hash::sha2;
-/// use std::default::Default;
 ///
 /// // Initialize sodium_sys
 /// init::init();
 ///
 /// // Initialize the hash state.
-/// let mut state = Default::default();
+/// let state_size = sha2::state_size_256().unwrap();
+/// let state = secmem::malloc(state_size);
+/// assert!(state.len() == state_size);
+/// ```
+pub fn state_size_256() -> Result<usize, SSError> {
+    let res: size_t;
+
+    unsafe {
+        res = crypto_hash_sha256_statebytes();
+    }
+
+    if res > 0 {
+        Ok(res as usize)
+    } else {
+        Err(HASH("Unable to determind state size"))
+    }
+}
+
+/// The *state_size_512()* function should be used in conjunction with
+/// *utils::malloc()* to allocate the memory for the hash state for SHA256 at
+/// runtime.
+///
+/// # Examples
+///
+/// ```
+/// use sodium_sys::crypto::utils::{init, secmem};
+/// use sodium_sys::crypto::hash::sha2;
+///
+/// // Initialize sodium_sys
+/// init::init();
+///
+/// // Initialize the hash state.
+/// let state_size = sha2::state_size_512().unwrap();
+/// let state = secmem::malloc(state_size);
+/// assert!(state.len() == state_size);
+/// ```
+pub fn state_size_512() -> Result<usize, SSError> {
+    let res: size_t;
+
+    unsafe {
+        res = crypto_hash_sha512_statebytes();
+    }
+
+    if res > 0 {
+        Ok(res as usize)
+    } else {
+        Err(HASH("Unable to determind state size"))
+    }
+}
+/// # Examples
+///
+/// ```
+/// use sodium_sys::crypto::utils::{init, secmem};
+/// use sodium_sys::crypto::hash::sha2;
+///
+/// // Initialize sodium_sys
+/// init::init();
+///
+/// // Initialize the hash state.
+/// let state_size = sha2::state_size_256().unwrap();
+/// let mut state = secmem::malloc(state_size);
 /// let _ = sha2::init256(&mut state).unwrap();
 /// ```
-pub fn init256<'a>(state: &'a mut SHA256State) -> Result<(), SSError> {
+pub fn init256<'a>(state: &'a mut [u8]) -> Result<(), SSError> {
     let res: i32;
 
     unsafe {
-        res = crypto_hash_sha256_init(state);
+        res = crypto_hash_sha256_init(state.as_mut_ptr());
     }
 
     if res == 0 {
@@ -220,15 +168,15 @@ pub fn init256<'a>(state: &'a mut SHA256State) -> Result<(), SSError> {
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::utils::{init, secmem};
 /// use sodium_sys::crypto::hash::sha2;
-/// use std::default::Default;
 ///
 /// // Initialize sodium_sys
 /// init::init();
 ///
 /// // Initialize the hash state.
-/// let mut state = Default::default();
+/// let state_size = sha2::state_size_256().unwrap();
+/// let mut state = secmem::malloc(state_size);
 /// let _ = sha2::init256(&mut state).unwrap();
 ///
 /// // Update the hash state.
@@ -237,12 +185,11 @@ pub fn init256<'a>(state: &'a mut SHA256State) -> Result<(), SSError> {
 /// let message1 = b"testsomemore";
 /// let _ = sha2::update256(&mut state, message1);
 /// ```
-pub fn update256<'a>(state: &'a mut SHA256State,
-                     in_: &[u8]) -> Result<(), SSError> {
+pub fn update256<'a>(state: &'a mut [u8], in_: &[u8]) -> Result<(), SSError> {
     let res: i32;
 
     unsafe {
-        res = crypto_hash_sha256_update(state,
+        res = crypto_hash_sha256_update(state.as_mut_ptr(),
                                         in_.as_ptr(),
                                         in_.len() as c_ulonglong);
     }
@@ -257,15 +204,15 @@ pub fn update256<'a>(state: &'a mut SHA256State,
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::utils::{init, secmem};
 /// use sodium_sys::crypto::hash::sha2;
-/// use std::default::Default;
 ///
 /// // Initialize sodium_sys
 /// init::init();
 ///
 /// // Initialize the hash state.
-/// let mut state = Default::default();
+/// let state_size = sha2::state_size_256().unwrap();
+/// let mut state = secmem::malloc(state_size);
 /// let _ = sha2::init256(&mut state).unwrap();
 ///
 /// // Update the hash state.
@@ -278,14 +225,13 @@ pub fn update256<'a>(state: &'a mut SHA256State,
 /// let hash = sha2::finalize256(&mut state).unwrap();
 /// assert!(hash.len() == sha2::SHA256_BYTES);
 /// ```
-pub fn finalize256<'a>(state: &'a mut SHA256State)
-    -> Result<&'a [u8], SSError> {
+pub fn finalize256<'a>(state: &'a mut [u8]) -> Result<&'a [u8], SSError> {
     let out = secmem::malloc(SHA256_BYTES);
 
     let res: i32;
 
     unsafe {
-        res = crypto_hash_sha256_final(state, out.as_mut_ptr());
+        res = crypto_hash_sha256_final(state.as_mut_ptr(), out.as_mut_ptr());
     }
 
     if res == 0 {
@@ -332,22 +278,22 @@ pub fn hash512<'a>(message: &'a [u8]) -> Result<&'a [u8], SSError> {
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::utils::{init, secmem};
 /// use sodium_sys::crypto::hash::sha2;
-/// use std::default::Default;
 ///
 /// // Initialize sodium_sys
 /// init::init();
 ///
 /// // Initialize the hash state.
-/// let mut state = Default::default();
+/// let state_size = sha2::state_size_512().unwrap();
+/// let mut state = secmem::malloc(state_size);
 /// let _ = sha2::init512(&mut state).unwrap();
 /// ```
-pub fn init512<'a>(state: &'a mut SHA512State) -> Result<(), SSError> {
+pub fn init512<'a>(state: &'a mut [u8]) -> Result<(), SSError> {
     let res: i32;
 
     unsafe {
-        res = crypto_hash_sha512_init(state);
+        res = crypto_hash_sha512_init(state.as_mut_ptr());
     }
 
     if res == 0 {
@@ -360,15 +306,15 @@ pub fn init512<'a>(state: &'a mut SHA512State) -> Result<(), SSError> {
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::utils::{init, secmem};
 /// use sodium_sys::crypto::hash::sha2;
-/// use std::default::Default;
 ///
 /// // Initialize sodium_sys
 /// init::init();
 ///
 /// // Initialize the hash state.
-/// let mut state = Default::default();
+/// let state_size = sha2::state_size_512().unwrap();
+/// let mut state = secmem::malloc(state_size);
 /// let _ = sha2::init512(&mut state).unwrap();
 ///
 /// // Update the hash state.
@@ -377,12 +323,11 @@ pub fn init512<'a>(state: &'a mut SHA512State) -> Result<(), SSError> {
 /// let message1 = b"testsomemore";
 /// let _ = sha2::update512(&mut state, message1);
 /// ```
-pub fn update512<'a>(state: &'a mut SHA512State,
-                     in_: &[u8]) -> Result<(), SSError> {
+pub fn update512<'a>(state: &'a mut [u8], in_: &[u8]) -> Result<(), SSError> {
     let res: i32;
 
     unsafe {
-        res = crypto_hash_sha512_update(state,
+        res = crypto_hash_sha512_update(state.as_mut_ptr(),
                                         in_.as_ptr(),
                                         in_.len() as c_ulonglong);
     }
@@ -397,15 +342,15 @@ pub fn update512<'a>(state: &'a mut SHA512State,
 /// # Examples
 ///
 /// ```
-/// use sodium_sys::crypto::utils::init;
+/// use sodium_sys::crypto::utils::{init, secmem};
 /// use sodium_sys::crypto::hash::sha2;
-/// use std::default::Default;
 ///
 /// // Initialize sodium_sys
 /// init::init();
 ///
 /// // Initialize the hash state.
-/// let mut state = Default::default();
+/// let state_size = sha2::state_size_512().unwrap();
+/// let mut state = secmem::malloc(state_size);
 /// let _ = sha2::init512(&mut state).unwrap();
 ///
 /// // Update the hash state.
@@ -418,14 +363,13 @@ pub fn update512<'a>(state: &'a mut SHA512State,
 /// let hash = sha2::finalize512(&mut state).unwrap();
 /// assert!(hash.len() == sha2::SHA512_BYTES);
 /// ```
-pub fn finalize512<'a>(state: &'a mut SHA512State)
-    -> Result<&'a [u8], SSError> {
+pub fn finalize512<'a>(state: &'a mut [u8]) -> Result<&'a [u8], SSError> {
     let out = secmem::malloc(SHA512_BYTES);
 
     let res: i32;
 
     unsafe {
-        res = crypto_hash_sha512_final(state, out.as_mut_ptr());
+        res = crypto_hash_sha512_final(state.as_mut_ptr(), out.as_mut_ptr());
     }
 
     if res == 0 {

@@ -107,11 +107,11 @@ fn bench_finalize(b: &mut Bencher) {
     let state_size = generichash::state_size().unwrap();
     let mut state = secmem::malloc(state_size);
     let outlen = 64;
-    let _ = generichash::init(&mut state, outlen, None).unwrap();
-    let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
-    let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
 
     b.iter(|| {
+        let _ = generichash::init(&mut state, outlen, None).unwrap();
+        let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
+        let _ = generichash::update(&mut state, TEST_MESSAGE).unwrap();
         let mut hash = generichash::finalize(&mut state, outlen).unwrap();
         secmem::free(&mut hash);
     });

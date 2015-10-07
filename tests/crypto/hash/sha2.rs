@@ -1,6 +1,5 @@
 use sodium_sys::crypto::utils::secmem;
 use sodium_sys::crypto::hash::sha2;
-use std::default::Default;
 
 const TEST_MESSAGE: &'static [u8] = b"test";
 const TEST_H1: [u8; sha2::SHA256_BYTES] = [159, 134, 208, 129,
@@ -70,50 +69,50 @@ fn hash() {
 fn init() {
     ::test_init();
 
-    let mut state = Default::default();
+    let state_size = sha2::state_size_256().unwrap();
+    let mut state = secmem::malloc(state_size);
     let _ = sha2::init256(&mut state).unwrap();
-    assert!(state.state.len() == 8);
-    assert!(state.count.len() == 2);
-    assert!(state.buf.len() == 64);
+    assert!(state.len() == state_size);
 
-    let mut state1 = Default::default();
+    let state1_size = sha2::state_size_512().unwrap();
+    let mut state1 = secmem::malloc(state1_size);
     let _ = sha2::init512(&mut state1).unwrap();
-    assert!(state1.state.len() == 8);
-    assert!(state1.count.len() == 2);
-    assert!(state1.buf.len() == 128);
+    assert!(state1.len() == state1_size);
 }
 
 #[test]
 fn update() {
     ::test_init();
 
-    let mut state = Default::default();
+    let state_size = sha2::state_size_256().unwrap();
+    let mut state = secmem::malloc(state_size);
     let _ = sha2::init256(&mut state).unwrap();
     let _ = sha2::update256(&mut state, TEST_MESSAGE).unwrap();
-    let s1 = state.state;
     let _ = sha2::update256(&mut state, TEST_MESSAGE).unwrap();
-    assert!(s1 != state.state);
+    assert!(state.len() == state_size);
 
-    let mut state1 = Default::default();
+    let state1_size = sha2::state_size_512().unwrap();
+    let mut state1 = secmem::malloc(state1_size);
     let _ = sha2::init512(&mut state1).unwrap();
     let _ = sha2::update512(&mut state1, TEST_MESSAGE).unwrap();
     let _ = sha2::update512(&mut state1, TEST_MESSAGE).unwrap();
-    let mut it = state1.buf.into_iter();
-    assert_eq!(it.rposition(|x| *x != 0), Some(7));
+    assert!(state1.len() == state1_size);
 }
 
 #[test]
 fn finalize() {
     ::test_init();
 
-    let mut state = Default::default();
+    let state_size = sha2::state_size_256().unwrap();
+    let mut state = secmem::malloc(state_size);
     let _ = sha2::init256(&mut state).unwrap();
     let _ = sha2::update256(&mut state, TEST_MESSAGE).unwrap();
     let _ = sha2::update256(&mut state, TEST_MESSAGE).unwrap();
     let hash = sha2::finalize256(&mut state).unwrap();
     assert!(hash == TEST_H3);
 
-    let mut state1 = Default::default();
+    let state1_size = sha2::state_size_512().unwrap();
+    let mut state1 = secmem::malloc(state1_size);
     let _ = sha2::init512(&mut state1).unwrap();
     let _ = sha2::update512(&mut state1, TEST_MESSAGE).unwrap();
     let _ = sha2::update512(&mut state1, TEST_MESSAGE).unwrap();
