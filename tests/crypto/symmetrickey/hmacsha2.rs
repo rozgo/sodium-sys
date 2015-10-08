@@ -58,6 +58,34 @@ const TEST_MAC4: [u8; hmacsha2::HMACSHA256_BYTES] = [
     63, 239, 135, 88,
     110, 150, 163, 135
 ];
+const TEST_MAC5: [u8; hmacsha2::HMACSHA512_BYTES] = [
+    108, 49, 97, 205,
+    150, 222, 0, 163,
+    164, 83, 158, 130,
+    5, 98, 14, 50,
+    129, 93, 143, 200,
+    249, 65, 64, 185,
+    120, 99, 168, 116,
+    212, 76, 68, 187,
+    209, 174, 159, 187,
+    161, 13, 152, 83,
+    190, 207, 7, 251,
+    114, 110, 81, 35,
+    205, 89, 210, 255,
+    57, 246, 231, 231,
+    50, 213, 248, 82,
+    189, 144, 130, 239
+];
+const TEST_MAC6: [u8; hmacsha2::HMACSHA512256_BYTES] = [
+    108, 49, 97, 205,
+    150, 222, 0, 163,
+    164, 83, 158, 130,
+    5, 98, 14, 50,
+    129, 93, 143, 200,
+    249, 65, 64, 185,
+    120, 99, 168, 116,
+    212, 76, 68, 187
+];
 
 #[test]
 fn auth() {
@@ -134,6 +162,42 @@ fn multipart() {
         &TEST_MAC4,
         &TEST_KEY1,
         SHA256
+    ).unwrap();
+    assert!(res == 0);
+
+    // SHA512
+    let state_size = hmacsha2::statebytes(SHA512);
+    let mut state = secmem::malloc(state_size);
+    let _ = hmacsha2::init(&mut state, &TEST_KEY1, SHA512).unwrap();
+    let _ = hmacsha2::update(&mut state, TEST_MESSAGE, SHA512).unwrap();
+    let _ = hmacsha2::update(&mut state, TEST_MESSAGE, SHA512).unwrap();
+    let mac2 = hmacsha2::finalize(&mut state, SHA512).unwrap();
+    assert!(mac2.len() == hmacsha2::HMACSHA512_BYTES);
+    assert!(secmem::memcmp(mac2, &TEST_MAC5) == 0);
+
+    let res = hmacsha2::verify(
+        TEST_MULTI_MESSAGE,
+        &TEST_MAC5,
+        &TEST_KEY1,
+        SHA512
+    ).unwrap();
+    assert!(res == 0);
+
+    // SHA512256
+    let state_size = hmacsha2::statebytes(SHA512256);
+    let mut state = secmem::malloc(state_size);
+    let _ = hmacsha2::init(&mut state, &TEST_KEY1, SHA512256).unwrap();
+    let _ = hmacsha2::update(&mut state, TEST_MESSAGE, SHA512256).unwrap();
+    let _ = hmacsha2::update(&mut state, TEST_MESSAGE, SHA512256).unwrap();
+    let mac3 = hmacsha2::finalize(&mut state, SHA512256).unwrap();
+    assert!(mac3.len() == hmacsha2::HMACSHA512256_BYTES);
+    assert!(secmem::memcmp(mac3, &TEST_MAC6) == 0);
+
+    let res = hmacsha2::verify(
+        TEST_MULTI_MESSAGE,
+        &TEST_MAC6,
+        &TEST_KEY1,
+        SHA512256
     ).unwrap();
     assert!(res == 0);
 }
