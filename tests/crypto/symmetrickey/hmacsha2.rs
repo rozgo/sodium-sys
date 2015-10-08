@@ -3,13 +3,14 @@ use sodium_sys::crypto::symmetrickey::hmacsha2;
 use sodium_sys::crypto::symmetrickey::hmacsha2::Family::*;
 
 const TEST_MESSAGE: &'static [u8] = b"test";
+const TEST_MULTI_MESSAGE: &'static [u8] = b"testtest";
 const TEST_KEY1: [u8; hmacsha2::HMACSHA256_KEYBYTES] =
     [0; hmacsha2::HMACSHA256_KEYBYTES];
 const TEST_KEY2: [u8; hmacsha2::HMACSHA512_KEYBYTES] =
     [0; hmacsha2::HMACSHA512_KEYBYTES];
 const TEST_KEY3: [u8; hmacsha2::HMACSHA512256_KEYBYTES] =
     [0; hmacsha2::HMACSHA512256_KEYBYTES];
-const TEST_H1: [u8; hmacsha2::HMACSHA256_BYTES] = [
+const TEST_MAC1: [u8; hmacsha2::HMACSHA256_BYTES] = [
     67, 176, 206, 249,
     146, 101, 249, 227,
     76, 16, 234, 157,
@@ -19,7 +20,7 @@ const TEST_H1: [u8; hmacsha2::HMACSHA256_BYTES] = [
     29, 139, 162, 54,
     231, 168, 25, 251
 ];
-const TEST_H2: [u8; hmacsha2::HMACSHA512_BYTES] = [
+const TEST_MAC2: [u8; hmacsha2::HMACSHA512_BYTES] = [
     41, 197, 250, 176,
     119, 192, 9, 185,
     230, 103, 107, 47,
@@ -37,7 +38,7 @@ const TEST_H2: [u8; hmacsha2::HMACSHA512_BYTES] = [
     202, 142, 0, 41,
     140, 81, 119, 100
 ];
-const TEST_H3: [u8; hmacsha2::HMACSHA512256_BYTES] = [
+const TEST_MAC3: [u8; hmacsha2::HMACSHA512256_BYTES] = [
     41, 197, 250, 176,
     119, 192, 9, 185,
     230, 103, 107, 47,
@@ -47,6 +48,16 @@ const TEST_H3: [u8; hmacsha2::HMACSHA512256_BYTES] = [
     91, 90, 123, 172,
     86, 25, 236, 129
 ];
+const TEST_MAC4: [u8; hmacsha2::HMACSHA256_BYTES] = [
+    110, 48, 162, 251,
+    70, 55, 150, 36,
+    200, 135, 108, 67,
+    5, 98, 136, 223,
+    192, 6, 216, 178,
+    131, 12, 33, 180,
+    63, 239, 135, 88,
+    110, 150, 163, 135
+];
 
 #[test]
 fn auth() {
@@ -55,19 +66,74 @@ fn auth() {
     // SHA256
     let mac1 = hmacsha2::auth(TEST_MESSAGE, &TEST_KEY1, SHA256).unwrap();
     assert!(mac1.len() == hmacsha2::HMACSHA256_BYTES);
-    assert!(mac1 == TEST_H1);
+    assert!(mac1 == TEST_MAC1);
 
     // SHA512
     let mac2 = hmacsha2::auth(TEST_MESSAGE, &TEST_KEY2, SHA512).unwrap();
     assert!(mac2.len() == hmacsha2::HMACSHA512_BYTES);
-    assert!(secmem::memcmp(mac2, &TEST_H2) == 0);
+    assert!(secmem::memcmp(mac2, &TEST_MAC2) == 0);
 
     // SHA512256
     let mac3 = hmacsha2::auth(TEST_MESSAGE, &TEST_KEY3, SHA512256).unwrap();
     assert!(mac3.len() == hmacsha2::HMACSHA512256_BYTES);
-    assert!(secmem::memcmp(mac3, &TEST_H3) == 0);
+    assert!(secmem::memcmp(mac3, &TEST_MAC3) == 0);
 
     secmem::free(mac1);
     secmem::free(mac2);
     secmem::free(mac3);
+}
+
+#[test]
+fn verify() {
+    ::test_init();
+
+    // SHA256
+    let res = hmacsha2::verify(
+        TEST_MESSAGE,
+        &TEST_MAC1,
+        &TEST_KEY1,
+        SHA256
+    ).unwrap();
+    assert!(res == 0);
+
+    // SHA512
+    let res = hmacsha2::verify(
+        TEST_MESSAGE,
+        &TEST_MAC2,
+        &TEST_KEY2,
+        SHA512
+    ).unwrap();
+    assert!(res == 0);
+
+    // SHA512256
+    let res = hmacsha2::verify(
+        TEST_MESSAGE,
+        &TEST_MAC3,
+        &TEST_KEY3,
+        SHA512256
+    ).unwrap();
+    assert!(res == 0);
+}
+
+#[test]
+fn multipart() {
+    ::test_init();
+
+    // SHA256
+    let state_size = hmacsha2::statebytes(SHA256);
+    let mut state = secmem::malloc(state_size);
+    let _ = hmacsha2::init(&mut state, &TEST_KEY1, SHA256).unwrap();
+    let _ = hmacsha2::update(&mut state, TEST_MESSAGE, SHA256).unwrap();
+    let _ = hmacsha2::update(&mut state, TEST_MESSAGE, SHA256).unwrap();
+    let mac1 = hmacsha2::finalize(&mut state, SHA256).unwrap();
+    assert!(mac1.len() == hmacsha2::HMACSHA256_BYTES);
+    assert!(mac1 == &TEST_MAC4);
+
+    let res = hmacsha2::verify(
+        TEST_MULTI_MESSAGE,
+        &TEST_MAC4,
+        &TEST_KEY1,
+        SHA256
+    ).unwrap();
+    assert!(res == 0);
 }
