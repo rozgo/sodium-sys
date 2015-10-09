@@ -41,3 +41,13 @@ fn bench_auth_512256(b: &mut Bencher) {
         secmem::free(mac);
     });
 }
+
+#[bench]
+fn bench_verify_256(b: &mut Bencher) {
+    ::test_init();
+    let mac = hmacsha2::auth(TEST_MESSAGE, &TEST_KEY1, SHA256).unwrap();
+
+    b.iter(|| {
+        hmacsha2::verify(TEST_MESSAGE, mac, &TEST_KEY1, SHA256)
+    });
+}
