@@ -32,21 +32,12 @@ use std::ffi::NulError;
 use std::str;
 use std::string;
 
-pub mod core;
-pub mod randombytes;
-pub mod utils;
-pub mod version;
-
 /// Crypography library modules.
 pub mod crypto {
-    pub mod aead;
-    pub mod auth;
-    pub mod box_;
-    pub mod key;
-    pub mod nonce;
-    pub mod secretbox;
-    pub mod sign;
-    pub mod verify;
+    pub mod asymmetrickey;
+    pub mod hash;
+    pub mod symmetrickey;
+    pub mod utils;
 }
 
 pub use self::SSError::*;
@@ -62,6 +53,8 @@ pub enum SSError {
     DECRYPT(&'static str),
     /// An error returned from functions that encrypt messages.
     ENCRYPT(&'static str),
+    /// An error returned from functions that hash messages.
+    HASH(&'static str),
     /// An error returned from functions the generate keypairs.
     KEYGEN(&'static str),
     /// An error returned from functions that generate MACs.
@@ -73,6 +66,8 @@ pub enum SSError {
     STR(str::Utf8Error),
     /// A possible error value from the String::from_utf8 function.
     STRING(string::FromUtf8Error),
+    /// A possible error when verfiying a signed message.
+    VERIFYSIGNED(&'static str),
 }
 
 impl From<NulError> for SSError {
