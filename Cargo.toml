@@ -17,10 +17,10 @@ pwhash_bench = []
 mlock_tests = []
 
 [build-dependencies]
-pkg-config = "*"
+pkg-config = "~0.3.6"
 
 [dependencies]
-libc = "*"
+libc = "~0.1.12"
 
 [dev-dependencies]
 regex = "*"
