@@ -495,17 +495,17 @@ pub fn init<'a>
             SHA256    => crypto_auth_hmacsha256_init(
                             state.as_mut_ptr(),
                             key.as_ptr(),
-                            key.len() as c_ulonglong
+                            key.len() as size_t
                         ),
             SHA512    => crypto_auth_hmacsha512_init(
                             state.as_mut_ptr(),
                             key.as_ptr(),
-                            key.len() as c_ulonglong
+                            key.len() as size_t
                         ),
             SHA512256 => crypto_auth_hmacsha512256_init(
                             state.as_mut_ptr(),
                             key.as_ptr(),
-                            key.len() as c_ulonglong
+                            key.len() as size_t
                         ),
         };
     }

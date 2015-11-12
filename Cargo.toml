@@ -1,6 +1,6 @@
 [package]
 name = "sodium-sys"
-version = "0.0.2-pre"
+version = "0.0.3-pre"
 authors = ["Jason Ozias <jason.g.ozias@gmail.com>"]
 description = "FFI binding to libsodium"
 documentation = "http://rustyhorde.github.io/sodium-sys/docs/sodium_sys/index.html"
@@ -20,7 +20,7 @@ mlock_tests = []
 pkg-config = "~0.3.6"
 
 [dependencies]
-libc = "~0.1.12"
+libc = "~0.2.2"
 
 [dev-dependencies]
-regex = "*"
+regex = "~0.1.41"
