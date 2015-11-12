@@ -17,7 +17,7 @@
 //! - Hash tables
 //! - Probabilistic data structures such as Bloom filters
 //! - Integrity checking in interactive protocols
-use libc::{c_int, c_uchar, c_ulonglong, size_t};
+use libc::{c_int, c_uchar, c_ulonglong};
 use SSError::{self, HASH};
 use crypto::utils::secmem;
 
@@ -63,7 +63,7 @@ pub fn hash<'a>(message: &'a [u8], k: &[u8]) -> Result<&'a [u8], SSError> {
     unsafe {
         res = crypto_shorthash(hash.as_mut_ptr(),
                                message.as_ptr(),
-                               message.len() as size_t,
+                               message.len() as c_ulonglong,
                                k.as_ptr());
     }
 

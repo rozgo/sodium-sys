@@ -130,7 +130,7 @@ pub fn hash<'a>(message: &'a [u8],
         res = crypto_generichash(hash.as_mut_ptr(),
                                  outlen as size_t,
                                  message.as_ptr(),
-                                 message.len() as size_t,
+                                 message.len() as c_ulonglong,
                                  key,
                                  keylen);
     }
