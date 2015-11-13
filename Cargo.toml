@@ -1,6 +1,6 @@
 [package]
 name = "sodium-sys"
-version = "0.0.3-pre"
+version = "0.0.4-pre"
 authors = ["Jason Ozias <jason.g.ozias@gmail.com>"]
 description = "FFI binding to libsodium"
 documentation = "http://rustyhorde.github.io/sodium-sys/docs/sodium_sys/index.html"
